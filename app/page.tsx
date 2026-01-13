@@ -1,65 +1,484 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { parseCSV, parsePDF, formatCurrency } from '@/lib/parsers';
+import { analyzeTransactions, Analysis } from '@/lib/analyzer';
+
+// Animated counter component
+function AnimatedCounter({ value, duration = 2 }: { value: number; duration?: number }) {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (latest) => Math.round(latest));
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const controls = animate(count, value, { duration });
+    return controls.stop;
+  }, [count, value, duration]);
+
+  useEffect(() => {
+    const unsubscribe = rounded.on('change', (latest) => setDisplayValue(latest));
+    return unsubscribe;
+  }, [rounded]);
+
+  return <span>{formatCurrency(displayValue)}</span>;
+}
 
 export default function Home() {
+  const [isDragging, setIsDragging] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [aiExplanation, setAiExplanation] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) handleFile(droppedFile);
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) handleFile(selectedFile);
+  };
+
+  const handleFile = (uploadedFile: File) => {
+    setError('');
+    const fileType = uploadedFile.type;
+    const fileName = uploadedFile.name.toLowerCase();
+
+    if (
+      fileType === 'text/csv' ||
+      fileType === 'application/pdf' ||
+      fileName.endsWith('.csv') ||
+      fileName.endsWith('.pdf')
+    ) {
+      setFile(uploadedFile);
+      setAnalysis(null);
+      setAiExplanation('');
+    } else {
+      setError('Please upload a CSV or PDF file');
+    }
+  };
+
+  const analyzeFile = async () => {
+    if (!file) return;
+    setIsAnalyzing(true);
+    setError('');
+    setShowBreakdown(false);
+
+    try {
+      let transactions;
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        transactions = await parseCSV(file);
+      } else {
+        transactions = await parsePDF(file);
+      }
+
+      const result = analyzeTransactions(transactions);
+      setAnalysis(result);
+
+      // Show breakdown after counter animation (2.5 seconds)
+      setTimeout(() => {
+        setShowBreakdown(true);
+      }, 2500);
+
+      const response = await fetch('/api/explain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysis: result }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get AI insights');
+      }
+
+      const { explanation } = await response.json();
+      setAiExplanation(explanation);
+    } catch (err: any) {
+      setError(err.message || 'Failed to analyze file');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const resetAnalysis = () => {
+    setFile(null);
+    setAnalysis(null);
+    setAiExplanation('');
+    setError('');
+    setShowBreakdown(false);
+  };
+
+  // Results View
+  if (analysis) {
+    return (
+      <div className="min-h-screen bg-white bg-dots">
+        <div className="mx-auto max-w-4xl px-6 py-12">
+          {/* Header */}
+          <div className="mb-16">
+            <button
+              onClick={resetAnalysis}
+              className="mb-8 text-red-600 hover:text-red-700 font-medium"
+            >
+              ← Back
+            </button>
+            <h1 className="text-5xl font-bold tracking-tight text-black mb-2">
+              your financial breakdown
+            </h1>
+            <p className="text-black text-lg">Analysis complete • {file?.name}</p>
+          </div>
+
+          {/* Animated Total - Always shows first */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-16 text-center"
+          >
+            <p className="text-red-600 text-sm mb-4">Total Spent</p>
+            <h2 className="text-7xl font-bold text-black mb-2">
+              <AnimatedCounter value={analysis.totalSpent} duration={2} />
+            </h2>
+            <p className="text-black text-lg">over the last few months</p>
+          </motion.div>
+
+          {/* Breakdown - Shows after counter animation */}
+          {showBreakdown && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8 }}
+            >
+              {/* AI Insights */}
+              {aiExplanation && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.6 }}
+                  className="mb-16 border-2 border-dashed border-red-300 rounded-lg p-8 bg-red-50/30"
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-2xl">✨</span>
+                    <h2 className="text-xl font-bold text-black">AI Analysis</h2>
+                  </div>
+                  <p className="text-black leading-relaxed whitespace-pre-line text-lg">
+                    {aiExplanation}
+                  </p>
+                </motion.div>
+              )}
+
+              {/* Monthly Average */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="mb-16 border-2 border-dashed border-red-300 rounded-lg p-8 text-center"
+              >
+                <p className="text-red-600 text-sm mb-2">Monthly Average</p>
+                <p className="text-4xl font-bold text-black">
+                  {formatCurrency(analysis.averageMonthlySpending)}
+                </p>
+              </motion.div>
+
+              {/* Subscriptions */}
+              {analysis.subscriptions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.6 }}
+                  className="mb-16"
+                >
+                  <h2 className="text-3xl font-bold text-black mb-6">
+                    subscriptions found
+                  </h2>
+                  <div className="border-2 border-dashed border-red-300 rounded-lg divide-y-2 divide-dashed divide-red-300">
+                    {analysis.subscriptions.map((sub, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 + idx * 0.1, duration: 0.4 }}
+                        className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      >
+                        <div>
+                          <p className="text-black text-lg">{sub.name}</p>
+                          <p className="text-black text-sm">{sub.transactions.length} charges</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-2xl text-black">
+                            {formatCurrency(sub.amount)}
+                          </p>
+                          <p className="text-black text-sm">/month</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Categories */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="mb-16"
+              >
+                <h2 className="text-3xl font-bold text-black mb-6">
+                  spending by category
+                </h2>
+                <div className="border-2 border-dashed border-red-300 rounded-lg divide-y-2 divide-dashed divide-red-300">
+                  {analysis.categorySpending.map((cat, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.6 + idx * 0.1, duration: 0.4 }}
+                      className="p-6"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-black text-lg">{cat.category}</span>
+                          <span className="px-2 py-1 bg-gray-100 rounded text-xs font-semibold text-red-600">
+                            {cat.count}
+                          </span>
+                        </div>
+                        <span className="font-bold text-xl text-black">
+                          {formatCurrency(cat.total)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${cat.percentage}%` }}
+                            transition={{ delay: 0.7 + idx * 0.1, duration: 0.8, ease: "easeOut" }}
+                            className="h-full bg-black rounded-full"
+                          />
+                        </div>
+                        <span className="text-sm text-red-600 w-12 text-right">
+                          {cat.percentage.toFixed(0)}%
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Footer */}
+          <div className="text-center pt-8 border-t-2 border-dashed border-red-200">
+            <p className="text-red-600 text-sm mb-8">
+              Your files are analyzed locally and immediately discarded. Nothing is stored.
+            </p>
+
+            {/* Footer Navigation */}
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+              <Link href="/privacy" className="text-black hover:text-red-600 transition-colors">
+                Privacy
+              </Link>
+              <Link href="/terms" className="text-black hover:text-red-600 transition-colors">
+                Terms
+              </Link>
+              <Link href="/faq" className="text-black hover:text-red-600 transition-colors">
+                FAQ
+              </Link>
+              <Link href="/changelog" className="text-black hover:text-red-600 transition-colors">
+                Changelog
+              </Link>
+              <Link href="/refer" className="text-black hover:text-red-600 transition-colors">
+                Refer & Earn
+              </Link>
+              <Link href="/contact" className="text-black hover:text-red-600 transition-colors">
+                Contact
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Upload View
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-white bg-dots">
+      <div className="mx-auto max-w-3xl px-6 py-20">
+        {/* Header */}
+        <div className="mb-16">
+          <h1 className="text-6xl sm:text-7xl font-bold tracking-tight text-black mb-4">
+            just save
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-red-600 text-xl">
+            Find and cancel forgotten subscriptions
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Star Rating */}
+        <div className="flex items-center gap-2 mb-12">
+          <div className="flex gap-1">
+            {[...Array(5)].map((_, i) => (
+              <svg
+                key={i}
+                className="w-5 h-5 text-red-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            ))}
+          </div>
+          <span className="text-sm font-semibold text-red-600">399</span>
         </div>
-      </main>
+
+        {/* Error */}
+        {error && (
+          <div className="mb-8 border-2 border-dashed border-red-400 rounded-lg p-4 bg-red-50 text-red-700 text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Upload Box */}
+        <div className="border-2 border-dashed border-red-300 rounded-lg mb-8">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`p-16 text-center transition-all ${
+              isDragging ? 'bg-red-50 border-red-400' : 'hover:bg-gray-50'
+            }`}
+          >
+            <input
+              type="file"
+              id="file-upload"
+              accept=".csv,.pdf"
+              onChange={handleFileInput}
+              className="hidden"
+            />
+
+            {!file ? (
+              <label htmlFor="file-upload" className="cursor-pointer block">
+                <p className="text-2xl font-bold text-black mb-2">
+                  Drop your last 2-3 months of statements
+                </p>
+                <p className="text-red-600 mb-1">
+                  CSV or PDF from any bank • Takes under 90 seconds
+                </p>
+              </label>
+            ) : (
+              <div>
+                <p className="text-2xl font-bold text-black mb-2">{file.name}</p>
+                <p className="text-red-600 mb-4">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+                <button
+                  onClick={() => setFile(null)}
+                  className="text-red-600 hover:text-red-700 font-semibold text-sm"
+                >
+                  Choose different file
+                </button>
+              </div>
+            )}
+          </div>
+
+          {file && (
+            <div className="border-t-2 border-dashed border-red-300 p-6 bg-gray-50">
+              <button
+                onClick={analyzeFile}
+                disabled={isAnalyzing}
+                className="w-full bg-black text-white font-bold py-4 px-6 rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Analyze My Spending →'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Privacy Notice */}
+        <p className="text-center text-red-600 text-sm">
+          Your files are analyzed and immediately discarded. Nothing is stored.
+        </p>
+
+        {/* Social Proof Section */}
+        <div className="mt-24 pt-12 border-t-2 border-dashed border-red-200">
+          <h3 className="text-center text-2xl font-bold text-black mb-8">
+            Real savings from real people
+          </h3>
+
+          <div className="grid sm:grid-cols-3 gap-6">
+            <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gray-200" />
+                <span className="font-semibold text-red-600">@user</span>
+              </div>
+              <p className="text-gray-700 mb-4 text-sm">
+                "Found subscriptions I forgot about years ago"
+              </p>
+              <p className="text-xl font-black text-black">$240/yr</p>
+            </div>
+
+            <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gray-200" />
+                <span className="font-semibold text-red-600">@user</span>
+              </div>
+              <p className="text-gray-700 mb-4 text-sm">
+                "Saved more than I expected. Super quick."
+              </p>
+              <p className="text-xl font-black text-black">$180/yr</p>
+            </div>
+
+            <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-gray-200" />
+                <span className="font-semibold text-red-600">@user</span>
+              </div>
+              <p className="text-gray-700 mb-4 text-sm">
+                "Didn't realize I was paying for so much"
+              </p>
+              <p className="text-xl font-black text-black">$420/yr</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Navigation */}
+        <div className="mt-16 pt-8 border-t-2 border-dashed border-red-200">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+            <Link href="/privacy" className="text-black hover:text-red-600 transition-colors">
+              Privacy
+            </Link>
+            <Link href="/terms" className="text-black hover:text-red-600 transition-colors">
+              Terms
+            </Link>
+            <Link href="/faq" className="text-black hover:text-red-600 transition-colors">
+              FAQ
+            </Link>
+            <Link href="/changelog" className="text-black hover:text-red-600 transition-colors">
+              Changelog
+            </Link>
+            <Link href="/refer" className="text-black hover:text-red-600 transition-colors">
+              Refer & Earn
+            </Link>
+            <Link href="/contact" className="text-black hover:text-red-600 transition-colors">
+              Contact
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
