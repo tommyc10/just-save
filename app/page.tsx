@@ -328,22 +328,22 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Star Rating */}
-        <div className="flex items-center gap-2 mb-12">
-          <div className="flex gap-1">
-            {[...Array(5)].map((_, i) => (
-              <svg
-                key={i}
-                className="w-5 h-5 text-red-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-            ))}
-          </div>
-          <span className="text-sm font-semibold text-red-600">399</span>
-        </div>
+        {/* GitHub Star */}
+        <a
+          href="https://github.com/tommyc10/just-save"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-3 mb-12 px-4 py-2 border-2 border-dashed border-red-300 rounded-full hover:bg-red-50 transition-colors"
+        >
+          <svg
+            className="w-5 h-5 text-red-500"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+          <span className="text-sm font-semibold text-red-600">just save</span>
+        </a>
 
         {/* Error */}
         {error && (
@@ -416,39 +416,39 @@ export default function Home() {
         {/* Social Proof Section */}
         <div className="mt-24 pt-12 border-t-2 border-dashed border-red-200">
           <h3 className="text-center text-2xl font-bold text-black mb-8">
-            Real savings from real people
+            Savings from our users
           </h3>
 
           <div className="grid sm:grid-cols-3 gap-6">
             <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200" />
-                <span className="font-semibold text-red-600">@user</span>
+                <img src="/bobafett.png" alt="Boba Fett" className="w-10 h-10 rounded-full object-cover" />
+                <span className="font-semibold text-red-600">@bobafett</span>
               </div>
               <p className="text-gray-700 mb-4 text-sm">
-                "Found subscriptions I forgot about years ago"
+                "This tool's worth every credit. Found subscriptions I forgot about like they were dodging Imperial entanglements."
               </p>
               <p className="text-xl font-black text-black">$240/yr</p>
             </div>
 
             <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200" />
-                <span className="font-semibold text-red-600">@user</span>
+                <img src="/DinDjarin.png" alt="Din Djarin" className="w-10 h-10 rounded-full object-cover" />
+                <span className="font-semibold text-red-600">@themandalorian</span>
               </div>
               <p className="text-gray-700 mb-4 text-sm">
-                "Saved more than I expected. Super quick."
+                "This is the way. Found unwanted charges faster than finding a bounty on Tatooine."
               </p>
               <p className="text-xl font-black text-black">$180/yr</p>
             </div>
 
             <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200" />
-                <span className="font-semibold text-red-600">@user</span>
+                <img src="/cadbane.png" alt="Cad Bane" className="w-10 h-10 rounded-full object-cover" />
+                <span className="font-semibold text-red-600">@cadbane</span>
               </div>
               <p className="text-gray-700 mb-4 text-sm">
-                "Didn't realize I was paying for so much"
+                "A bounty hunter's gotta watch every credit. This caught subscriptions I didn't even know existed."
               </p>
               <p className="text-xl font-black text-black">$420/yr</p>
             </div>
