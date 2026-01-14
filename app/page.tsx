@@ -299,7 +299,7 @@ export default function Home() {
                                 initial={{ width: 0 }}
                                 animate={{ width: `${cat.percentage}%` }}
                                 transition={{ delay: 0.7 + idx * 0.1, duration: 0.8, ease: "easeOut" }}
-                                className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full"
+                                className="h-full bg-linear-to-r from-red-500 to-red-600 rounded-full"
                               />
                             </div>
                             <span className="text-base font-bold text-red-600 w-14 text-right">

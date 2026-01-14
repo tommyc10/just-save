@@ -6,46 +6,28 @@ export async function POST(request: NextRequest) {
   try {
     const { analysis }: { analysis: Analysis } = await request.json();
 
-    // Check for API key
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
         { error: 'API key not configured. Add ANTHROPIC_API_KEY to .env.local' },
         { status: 500 }
       );
     }
 
-    // Initialize Anthropic client
-    const anthropic = new Anthropic({
-      apiKey: apiKey,
-    });
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-    // Create prompt for Claude
-    const prompt = buildPrompt(analysis);
-
-    // Call Claude API
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+      messages: [{ role: 'user', content: buildPrompt(analysis) }],
     });
 
-    // Extract text response
     const textContent = message.content.find((block) => block.type === 'text');
     const explanation = textContent && 'text' in textContent ? textContent.text : '';
 
     return NextResponse.json({ explanation });
   } catch (error) {
     console.error('Error calling Claude API:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate explanation' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to generate explanation' }, { status: 500 });
   }
 }
 
@@ -53,7 +35,7 @@ export async function POST(request: NextRequest) {
  * Build the prompt for Claude to generate insights
  */
 function buildPrompt(analysis: Analysis): string {
-  const { subscriptions, categorySpending, totalSpent, averageMonthlySpending } = analysis;
+  const { subscriptions, categorySpending, totalSpent } = analysis;
 
   // Format subscriptions list
   const subsList = subscriptions
@@ -71,7 +53,6 @@ function buildPrompt(analysis: Analysis): string {
   return `You are a personal finance advisor. Analyze this spending data and provide clear, actionable insights in 3-4 short paragraphs.
 
 Total Spent: $${totalSpent.toFixed(2)}
-Average Monthly Spending: $${averageMonthlySpending.toFixed(2)}
 
 Subscriptions Found (${subscriptions.length}):
 ${subsList || 'None detected'}

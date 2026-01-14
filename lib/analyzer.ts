@@ -212,127 +212,65 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   Other: [],
 };
 
-/**
- * Detect subscriptions from transactions
- * Looks for recurring charges with similar amounts and descriptions
- */
 export function detectSubscriptions(transactions: Transaction[]): Subscription[] {
   const potentialSubs = new Map<string, Transaction[]>();
 
-  // Group transactions by similar descriptions
-  for (const transaction of transactions) {
-    if (transaction.type !== 'debit') continue;
+  transactions
+    .filter((t) => t.type === 'debit')
+    .filter((t) =>
+      SUBSCRIPTION_KEYWORDS.some((kw) => t.description.toLowerCase().includes(kw.toLowerCase()))
+    )
+    .forEach((t) => {
+      const normalized = normalizeDescription(t.description);
+      if (!potentialSubs.has(normalized)) potentialSubs.set(normalized, []);
+      potentialSubs.get(normalized)!.push(t);
+    });
 
-    const desc = transaction.description.toLowerCase();
-
-    // Check if it matches subscription keywords
-    const isSubKeyword = SUBSCRIPTION_KEYWORDS.some((keyword) =>
-      desc.includes(keyword.toLowerCase())
-    );
-
-    if (isSubKeyword) {
-      // Normalize the description to group similar ones
-      const normalized = normalizeDescription(transaction.description);
-
-      if (!potentialSubs.has(normalized)) {
-        potentialSubs.set(normalized, []);
-      }
-      potentialSubs.get(normalized)!.push(transaction);
-    }
-  }
-
-  // Filter to only recurring charges (appears 2+ times)
-  const subscriptions: Subscription[] = [];
-
-  for (const [name, txns] of potentialSubs.entries()) {
-    if (txns.length >= 2) {
-      // Calculate average amount
-      const avgAmount = txns.reduce((sum, t) => sum + t.amount, 0) / txns.length;
-
-      // Determine frequency based on transaction count and date range
-      let frequency: 'monthly' | 'annual' | 'unknown' = 'unknown';
-      if (txns.length >= 2) {
-        frequency = 'monthly'; // Simplified - could calculate based on date differences
-      }
-
-      subscriptions.push({
-        name,
-        amount: avgAmount,
-        frequency,
-        transactions: txns,
-      });
-    }
-  }
-
-  // Sort by amount (highest first)
-  return subscriptions.sort((a, b) => b.amount - a.amount);
+  return Array.from(potentialSubs.entries())
+    .filter(([_, txns]) => txns.length >= 2)
+    .map(([name, txns]) => ({
+      name,
+      amount: txns.reduce((sum, t) => sum + t.amount, 0) / txns.length,
+      frequency: 'monthly' as const,
+      transactions: txns,
+    }))
+    .sort((a, b) => b.amount - a.amount);
 }
 
-/**
- * Categorize spending by industry/type
- */
 export function categorizeSpending(transactions: Transaction[]): CategorySpending[] {
-  const categoryData = new Map<string, { total: number; count: number; transactions: Transaction[] }>();
-
-  // Initialize all categories
-  for (const category of Object.keys(CATEGORY_KEYWORDS)) {
-    categoryData.set(category, { total: 0, count: 0, transactions: [] });
-  }
-
-  // Categorize each transaction
-  for (const transaction of transactions) {
-    if (transaction.type !== 'debit') continue;
-
-    const desc = transaction.description.toLowerCase();
-    let categorized = false;
-
-    // Try to match with category keywords
-    for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-      if (keywords.some((keyword) => desc.includes(keyword.toLowerCase()))) {
-        const current = categoryData.get(category)!;
-        categoryData.set(category, {
-          total: current.total + transaction.amount,
-          count: current.count + 1,
-          transactions: [...current.transactions, transaction],
-        });
-        categorized = true;
-        break;
-      }
-    }
-
-    // If no category matched, add to "Other"
-    if (!categorized) {
-      const other = categoryData.get('Other')!;
-      categoryData.set('Other', {
-        total: other.total + transaction.amount,
-        count: other.count + 1,
-        transactions: [...other.transactions, transaction],
-      });
-    }
-  }
-
-  // Calculate total for percentages
-  const total = Array.from(categoryData.values()).reduce(
-    (sum, cat) => sum + cat.total,
-    0
+  const categoryData = new Map(
+    Object.keys(CATEGORY_KEYWORDS).map((cat) => [cat, { total: 0, count: 0, transactions: [] as Transaction[] }])
   );
 
-  // Convert to array and filter out zero categories
-  const result: CategorySpending[] = [];
-  for (const [category, data] of categoryData.entries()) {
-    if (data.total > 0) {
-      result.push({
-        category,
-        total: data.total,
-        percentage: (data.total / total) * 100,
-        count: data.count,
-        transactions: data.transactions,
-      });
-    }
-  }
+  transactions
+    .filter((t) => t.type === 'debit')
+    .forEach((t) => {
+      const desc = t.description.toLowerCase();
+      const category =
+        Object.entries(CATEGORY_KEYWORDS).find(([_, keywords]) =>
+          keywords.some((kw) => desc.includes(kw.toLowerCase()))
+        )?.[0] || 'Other';
 
-  // Sort by total (highest first)
-  return result.sort((a, b) => b.total - a.total);
+      const current = categoryData.get(category)!;
+      categoryData.set(category, {
+        total: current.total + t.amount,
+        count: current.count + 1,
+        transactions: [...current.transactions, t],
+      });
+    });
+
+  const total = Array.from(categoryData.values()).reduce((sum, cat) => sum + cat.total, 0);
+
+  return Array.from(categoryData.entries())
+    .filter(([_, data]) => data.total > 0)
+    .map(([category, data]) => ({
+      category,
+      total: data.total,
+      percentage: (data.total / total) * 100,
+      count: data.count,
+      transactions: data.transactions,
+    }))
+    .sort((a, b) => b.total - a.total);
 }
 
 /**

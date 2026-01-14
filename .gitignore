@@ -49,3 +49,7 @@ BACKGROUND_OPTIONS.md
 
 # images
 *.png
+.env.local
+
+# Sensitive sample data
+sample-data/*.pdf
