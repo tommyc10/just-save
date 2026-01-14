@@ -18,7 +18,6 @@ export interface Analysis {
   subscriptions: Subscription[];
   categorySpending: CategorySpending[];
   totalSpent: number;
-  averageMonthlySpending: number;
 }
 
 /**
@@ -32,16 +31,32 @@ const SUBSCRIPTION_KEYWORDS = [
   'disney',
   'apple music',
   'youtube premium',
+  'youtube',
   'adobe',
   'microsoft',
   'dropbox',
   'icloud',
   'gym',
+  'clubwise',
   'membership',
   'subscription',
   'monthly',
   'annual',
   'recurring',
+  'insurance',
+  'hastings',
+  'o2',
+  'ee',
+  'vodafone',
+  'virgin',
+  'bt',
+  'sky',
+  'american express',
+  'amex',
+  'dermatica',
+  'loaded',
+  'trading 212',
+  'udemy',
 ];
 
 /**
@@ -56,6 +71,9 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'ubereats',
     'grubhub',
     'postmates',
+    'deliveroo',
+    'just eat',
+    'uber eats',
     'delivery',
     'pizza',
     'burger',
@@ -64,6 +82,21 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'mcdonald',
     'starbucks',
     'chipotle',
+    'tesco',
+    'asda',
+    'sainsbury',
+    'waitrose',
+    'morrisons',
+    'aldi',
+    'lidl',
+    'pret',
+    'greggs',
+    'nando',
+    'pepes',
+    'peri peri',
+    'canteen',
+    'baxterstorey',
+    'benugo',
   ],
   Entertainment: [
     'netflix',
@@ -78,6 +111,8 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'playstation',
     'xbox',
     'nintendo',
+    'youtube',
+    'borough',
   ],
   Shopping: [
     'amazon',
@@ -88,6 +123,12 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'shopping',
     'retail',
     'store',
+    'paypal',
+    'sweatybetty',
+    'lookfantastic',
+    'barretts',
+    'bmw',
+    'mini',
   ],
   Transportation: [
     'uber',
@@ -100,6 +141,11 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'taxi',
     'shell',
     'chevron',
+    'petrol',
+    'pfs',
+    'dvla',
+    'car tax',
+    'mot',
   ],
   'Bills & Utilities': [
     'electric',
@@ -112,8 +158,28 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     't-mobile',
     'utility',
     'bill',
+    'o2',
+    'ee',
+    'vodafone',
+    'three',
+    'virgin money',
+    'virgin media',
+    'bt',
+    'sky',
+    'mortgage',
   ],
-  'Health & Fitness': ['gym', 'fitness', 'pharmacy', 'cvs', 'walgreens', 'medical', 'doctor'],
+  'Health & Fitness': [
+    'gym',
+    'fitness',
+    'pharmacy',
+    'cvs',
+    'walgreens',
+    'medical',
+    'doctor',
+    'clubwise',
+    'boots',
+    'dermatica',
+  ],
   Software: [
     'adobe',
     'microsoft',
@@ -122,6 +188,25 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'icloud',
     'github',
     'software',
+    'udemy',
+    'loaded',
+    'trading 212',
+  ],
+  Insurance: [
+    'insurance',
+    'hastings',
+    'aviva',
+    'direct line',
+    'churchill',
+    'admiral',
+  ],
+  'Credit Cards': [
+    'american express',
+    'amex',
+    'barclaycard',
+    'b/card',
+    'mastercard',
+    'visa',
   ],
   Other: [],
 };
@@ -258,14 +343,10 @@ export function analyzeTransactions(transactions: Transaction[]): Analysis {
     .filter((t) => t.type === 'debit')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Estimate monthly spending (rough calculation)
-  const averageMonthlySpending = totalSpent / 2.5; // Assuming 2-3 months of data
-
   return {
     subscriptions,
     categorySpending,
     totalSpent,
-    averageMonthlySpending,
   };
 }
 

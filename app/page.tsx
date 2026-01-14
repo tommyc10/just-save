@@ -148,13 +148,15 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-16 text-center"
+            className="mb-16"
           >
-            <p className="text-red-600 text-sm mb-4">Total Spent</p>
-            <h2 className="text-7xl font-bold text-black mb-2">
-              <AnimatedCounter value={analysis.totalSpent} duration={2} />
-            </h2>
-            <p className="text-black text-lg">over the last few months</p>
+            <div className="border-2 border-dashed border-red-300 rounded-lg p-12 text-center bg-red-50/30">
+              <p className="text-red-600 text-sm uppercase tracking-wider mb-4 font-semibold">Total Spent This Month</p>
+              <h2 className="text-7xl font-bold text-black mb-4">
+                <AnimatedCounter value={analysis.totalSpent} duration={2} />
+              </h2>
+              <p className="text-gray-600 text-base">from your statement</p>
+            </div>
           </motion.div>
 
           {/* Breakdown - Shows after counter animation */}
@@ -182,18 +184,6 @@ export default function Home() {
                 </motion.div>
               )}
 
-              {/* Monthly Average */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.6 }}
-                className="mb-16 border-2 border-dashed border-red-300 rounded-lg p-8 text-center"
-              >
-                <p className="text-red-600 text-sm mb-2">Monthly Average</p>
-                <p className="text-4xl font-bold text-black">
-                  {formatCurrency(analysis.averageMonthlySpending)}
-                </p>
-              </motion.div>
 
               {/* Subscriptions */}
               {analysis.subscriptions.length > 0 && (
@@ -203,30 +193,51 @@ export default function Home() {
                   transition={{ delay: 0.3, duration: 0.6 }}
                   className="mb-16"
                 >
-                  <h2 className="text-3xl font-bold text-black mb-6">
-                    subscriptions found
-                  </h2>
-                  <div className="border-2 border-dashed border-red-300 rounded-lg divide-y-2 divide-dashed divide-red-300">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-3xl font-bold text-black">
+                      💳 Recurring Subscriptions
+                    </h2>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-red-600">
+                        {formatCurrency(analysis.subscriptions.reduce((sum, sub) => sum + sub.amount, 0))}
+                      </p>
+                      <p className="text-sm text-gray-600">total per month</p>
+                    </div>
+                  </div>
+                  <div className="border-2 border-dashed border-red-300 rounded-lg divide-y-2 divide-dashed divide-red-300 bg-white">
                     {analysis.subscriptions.map((sub, idx) => (
                       <motion.div
                         key={idx}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.4 + idx * 0.1, duration: 0.4 }}
-                        className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                        className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors group"
                       >
-                        <div>
-                          <p className="text-black text-lg">{sub.name}</p>
-                          <p className="text-black text-sm">{sub.transactions.length} charges</p>
+                        <div className="flex-1">
+                          <p className="text-black text-xl font-semibold mb-1 capitalize">{sub.name}</p>
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-600 text-sm">{sub.transactions.length} charges this month</span>
+                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                              {sub.frequency}
+                            </span>
+                          </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-2xl text-black">
+                          <p className="font-bold text-3xl text-black group-hover:text-red-600 transition-colors">
                             {formatCurrency(sub.amount)}
                           </p>
-                          <p className="text-black text-sm">/month</p>
+                          <p className="text-gray-600 text-sm">/month</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {formatCurrency(sub.amount * 12)}/year
+                          </p>
                         </div>
                       </motion.div>
                     ))}
+                  </div>
+                  <div className="mt-4 p-4 bg-yellow-50 border-2 border-dashed border-yellow-300 rounded-lg">
+                    <p className="text-sm text-yellow-900">
+                      💡 <span className="font-semibold">Tip:</span> Review these subscriptions - canceling just one could save you hundreds per year!
+                    </p>
                   </div>
                 </motion.div>
               )}
@@ -239,39 +250,41 @@ export default function Home() {
                 className="mb-16"
               >
                 <h2 className="text-3xl font-bold text-black mb-6">
-                  spending by category
+                  📊 Spending Breakdown
                 </h2>
-                <div className="border-2 border-dashed border-red-300 rounded-lg divide-y-2 divide-dashed divide-red-300">
+                <div className="border-2 border-dashed border-red-300 rounded-lg divide-y-2 divide-dashed divide-red-300 bg-white">
                   {analysis.categorySpending.map((cat, idx) => (
                     <motion.div
                       key={idx}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.6 + idx * 0.1, duration: 0.4 }}
-                      className="p-6"
+                      className="p-6 hover:bg-gray-50 transition-colors"
                     >
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <span className="text-black text-lg">{cat.category}</span>
-                          <span className="px-2 py-1 bg-gray-100 rounded text-xs font-semibold text-red-600">
-                            {cat.count}
+                          <span className="text-black text-xl font-semibold">{cat.category}</span>
+                          <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-700">
+                            {cat.count} {cat.count === 1 ? 'transaction' : 'transactions'}
                           </span>
                         </div>
-                        <span className="font-bold text-xl text-black">
-                          {formatCurrency(cat.total)}
-                        </span>
+                        <div className="text-right">
+                          <span className="font-bold text-2xl text-black">
+                            {formatCurrency(cat.total)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${cat.percentage}%` }}
                             transition={{ delay: 0.7 + idx * 0.1, duration: 0.8, ease: "easeOut" }}
-                            className="h-full bg-black rounded-full"
+                            className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full"
                           />
                         </div>
-                        <span className="text-sm text-red-600 w-12 text-right">
-                          {cat.percentage.toFixed(0)}%
+                        <span className="text-base font-bold text-red-600 w-14 text-right">
+                          {cat.percentage.toFixed(1)}%
                         </span>
                       </div>
                     </motion.div>
@@ -373,10 +386,10 @@ export default function Home() {
             {!file ? (
               <label htmlFor="file-upload" className="cursor-pointer block">
                 <p className="text-2xl font-bold text-black mb-2">
-                  Drop your last 2-3 months of statements
+                  Drop your monthly bank statement
                 </p>
                 <p className="text-red-600 mb-1">
-                  CSV or PDF from any bank • Takes under 90 seconds
+                  CSV or PDF • Supports UK & US banks • Takes under 90 seconds
                 </p>
               </label>
             ) : (

@@ -33,14 +33,33 @@ export async function parseCSV(file: File): Promise<Transaction[]> {
 
 /**
  * Parse PDF bank statement
- * This is a simplified version - real implementation would need more complex PDF parsing
+ * Sends PDF to server-side API for processing
  */
 export async function parsePDF(file: File): Promise<Transaction[]> {
-  // For MVP, we'll focus on CSV first
-  // PDF parsing requires server-side processing with pdf-parse
-  throw new Error(
-    'PDF parsing coming soon! For now, please export your statement as CSV from your bank.'
-  );
+  try {
+    // Create FormData to send file to API
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Call server-side API to parse PDF
+    const response = await fetch('/api/parse-pdf', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to parse PDF');
+    }
+
+    const data = await response.json();
+    return data.transactions;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error('Failed to parse PDF file');
+  }
 }
 
 /**
