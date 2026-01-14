@@ -33,6 +33,7 @@ export default function Home() {
   const [aiExplanation, setAiExplanation] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -79,6 +80,7 @@ export default function Home() {
     setIsAnalyzing(true);
     setError('');
     setShowBreakdown(false);
+    setExpandedCategories(new Set());
 
     try {
       let transactions;
@@ -253,42 +255,91 @@ export default function Home() {
                   📊 Spending Breakdown
                 </h2>
                 <div className="border-2 border-dashed border-red-300 rounded-lg divide-y-2 divide-dashed divide-red-300 bg-white">
-                  {analysis.categorySpending.map((cat, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.6 + idx * 0.1, duration: 0.4 }}
-                      className="p-6 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <span className="text-black text-xl font-semibold">{cat.category}</span>
-                          <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-700">
-                            {cat.count} {cat.count === 1 ? 'transaction' : 'transactions'}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-2xl text-black">
-                            {formatCurrency(cat.total)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                  {analysis.categorySpending.map((cat, idx) => {
+                    const isExpanded = expandedCategories.has(cat.category);
+                    return (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 + idx * 0.1, duration: 0.4 }}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <button
+                          onClick={() => {
+                            const newExpanded = new Set(expandedCategories);
+                            if (isExpanded) {
+                              newExpanded.delete(cat.category);
+                            } else {
+                              newExpanded.add(cat.category);
+                            }
+                            setExpandedCategories(newExpanded);
+                          }}
+                          className="w-full p-6 text-left"
+                        >
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-black text-xl font-semibold">{cat.category}</span>
+                              <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-700">
+                                {cat.count} {cat.count === 1 ? 'transaction' : 'transactions'}
+                              </span>
+                              <span className="text-gray-400 text-sm">
+                                {isExpanded ? '▼' : '▶'}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-bold text-2xl text-black">
+                                {formatCurrency(cat.total)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${cat.percentage}%` }}
+                                transition={{ delay: 0.7 + idx * 0.1, duration: 0.8, ease: "easeOut" }}
+                                className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full"
+                              />
+                            </div>
+                            <span className="text-base font-bold text-red-600 w-14 text-right">
+                              {cat.percentage.toFixed(1)}%
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Expandable transaction list */}
+                        {isExpanded && (
                           <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${cat.percentage}%` }}
-                            transition={{ delay: 0.7 + idx * 0.1, duration: 0.8, ease: "easeOut" }}
-                            className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full"
-                          />
-                        </div>
-                        <span className="text-base font-bold text-red-600 w-14 text-right">
-                          {cat.percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                    </motion.div>
-                  ))}
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="px-6 pb-6"
+                          >
+                            <div className="border-t-2 border-dashed border-gray-200 pt-4 space-y-3">
+                              {cat.transactions.map((transaction, txIdx) => (
+                                <div
+                                  key={txIdx}
+                                  className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                >
+                                  <div className="flex-1">
+                                    <p className="text-black font-medium">{transaction.description}</p>
+                                    <p className="text-xs text-gray-500 mt-1">{transaction.date}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-lg font-bold text-black">
+                                      {formatCurrency(transaction.amount)}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </motion.div>
             </motion.div>

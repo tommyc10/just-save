@@ -12,6 +12,7 @@ export interface CategorySpending {
   total: number;
   percentage: number;
   count: number;
+  transactions: Transaction[];
 }
 
 export interface Analysis {
@@ -271,11 +272,11 @@ export function detectSubscriptions(transactions: Transaction[]): Subscription[]
  * Categorize spending by industry/type
  */
 export function categorizeSpending(transactions: Transaction[]): CategorySpending[] {
-  const categoryTotals = new Map<string, { total: number; count: number }>();
+  const categoryData = new Map<string, { total: number; count: number; transactions: Transaction[] }>();
 
   // Initialize all categories
   for (const category of Object.keys(CATEGORY_KEYWORDS)) {
-    categoryTotals.set(category, { total: 0, count: 0 });
+    categoryData.set(category, { total: 0, count: 0, transactions: [] });
   }
 
   // Categorize each transaction
@@ -288,10 +289,11 @@ export function categorizeSpending(transactions: Transaction[]): CategorySpendin
     // Try to match with category keywords
     for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
       if (keywords.some((keyword) => desc.includes(keyword.toLowerCase()))) {
-        const current = categoryTotals.get(category)!;
-        categoryTotals.set(category, {
+        const current = categoryData.get(category)!;
+        categoryData.set(category, {
           total: current.total + transaction.amount,
           count: current.count + 1,
+          transactions: [...current.transactions, transaction],
         });
         categorized = true;
         break;
@@ -300,29 +302,31 @@ export function categorizeSpending(transactions: Transaction[]): CategorySpendin
 
     // If no category matched, add to "Other"
     if (!categorized) {
-      const other = categoryTotals.get('Other')!;
-      categoryTotals.set('Other', {
+      const other = categoryData.get('Other')!;
+      categoryData.set('Other', {
         total: other.total + transaction.amount,
         count: other.count + 1,
+        transactions: [...other.transactions, transaction],
       });
     }
   }
 
   // Calculate total for percentages
-  const total = Array.from(categoryTotals.values()).reduce(
+  const total = Array.from(categoryData.values()).reduce(
     (sum, cat) => sum + cat.total,
     0
   );
 
   // Convert to array and filter out zero categories
   const result: CategorySpending[] = [];
-  for (const [category, data] of categoryTotals.entries()) {
+  for (const [category, data] of categoryData.entries()) {
     if (data.total > 0) {
       result.push({
         category,
         total: data.total,
         percentage: (data.total / total) * 100,
         count: data.count,
+        transactions: data.transactions,
       });
     }
   }
