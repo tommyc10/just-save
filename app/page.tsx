@@ -6,6 +6,49 @@ import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { parseCSV, parsePDF, formatCurrency } from '@/lib/parsers';
 import { analyzeTransactions, Analysis } from '@/lib/analyzer';
 
+// Minimalist Icon Components
+const ChartIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+  </svg>
+);
+
+const FolderIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+  </svg>
+);
+
+const ReceiptIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+  </svg>
+);
+
+const SparklesIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+  </svg>
+);
+
+const LockIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+  </svg>
+);
+
+const LightbulbIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+  </svg>
+);
+
+const TargetIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
 // Animated counter component
 function AnimatedCounter({ value, duration = 2 }: { value: number; duration?: number }) {
   const count = useMotionValue(0);
@@ -138,7 +181,7 @@ export default function Home() {
   // Results View
   if (analysis) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="min-h-screen bg-white bg-dots">
         <div className="mx-auto max-w-2xl px-6 py-12">
           {/* Header */}
           <div className="mb-10">
@@ -160,52 +203,104 @@ export default function Home() {
                 </p>
               </div>
               <div className="hidden sm:block">
-                <span className="text-4xl">📊</span>
+                <ChartIcon className="w-10 h-10 text-gray-400" />
               </div>
             </div>
           </div>
 
-          {/* Animated Total - Always shows first */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-10"
-          >
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-center shadow-xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
-              <div className="relative">
-                <p className="text-gray-400 text-sm mb-2 uppercase tracking-wider">Total Spent</p>
-                <h2 className="text-5xl sm:text-6xl font-bold text-white mb-2">
-                  <AnimatedCounter value={analysis.totalSpent} duration={2} />
-                </h2>
-                <p className="text-gray-500 text-sm">this statement period</p>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Quick Stats Row */}
-          {showBreakdown && (
+          {/* Main Stats Grid - Total + Quick Stats side by side */}
+          <div className="grid md:grid-cols-2 gap-6 mb-10">
+            {/* Animated Total */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="grid grid-cols-3 gap-3 mb-10"
+              transition={{ duration: 0.6 }}
             >
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
-                <p className="text-2xl font-bold text-gray-900">{analysis.categorySpending.length}</p>
-                <p className="text-xs text-gray-500">Categories</p>
+              <div className="bg-gray-900 rounded-2xl p-8 text-center shadow-xl border border-gray-800 h-full flex flex-col justify-center">
+                <p className="text-gray-400 text-xs mb-2 uppercase tracking-widest">Total Spent</p>
+                <h2 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+                  <AnimatedCounter value={analysis.totalSpent} duration={2} />
+                </h2>
+                <p className="text-gray-500 text-xs">this statement period</p>
               </div>
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
-                <p className="text-2xl font-bold text-gray-900">{analysis.subscriptions.length}</p>
-                <p className="text-xs text-gray-500">Subscriptions</p>
+            </motion.div>
+
+            {/* Quick Stats */}
+            {showBreakdown && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="grid grid-cols-1 gap-3"
+              >
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <FolderIcon className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">Categories</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{analysis.categorySpending.length}</p>
+                </div>
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <ReceiptIcon className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">Transactions</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {analysis.categorySpending.reduce((sum, cat) => sum + cat.transactions.length, 0)}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* AI Insights - Compact horizontal layout */}
+          {showBreakdown && (aiExplanation || isLoadingAI) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+              className="mb-10"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <SparklesIcon className="w-5 h-5 text-gray-900" />
+                <h2 className="text-xl font-bold text-black">Insights</h2>
               </div>
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
-                <p className="text-2xl font-bold text-red-600">
-                  {formatCurrency(analysis.subscriptions.reduce((sum, sub) => sum + sub.amount * 12, 0))}
-                </p>
-                <p className="text-xs text-gray-500">Yearly Subs</p>
-              </div>
+              
+              {isLoadingAI ? (
+                <div className="grid md:grid-cols-3 gap-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-gray-100 rounded-xl p-4 animate-pulse">
+                      <div className="h-4 bg-gray-300 rounded w-24 mb-2"></div>
+                      <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
+                      <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : aiExplanation && (
+                <div className="grid md:grid-cols-3 gap-3">
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ChartIcon className="w-4 h-4 text-gray-600" />
+                      <h3 className="font-semibold text-gray-900 text-sm">Overview</h3>
+                    </div>
+                    <p className="text-gray-600 text-sm leading-relaxed">{aiExplanation.overview}</p>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <LightbulbIcon className="w-4 h-4 text-gray-600" />
+                      <h3 className="font-semibold text-gray-900 text-sm">Key Insight</h3>
+                    </div>
+                    <p className="text-gray-600 text-sm leading-relaxed">{aiExplanation.insight}</p>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TargetIcon className="w-4 h-4 text-gray-600" />
+                      <h3 className="font-semibold text-gray-900 text-sm">Recommendation</h3>
+                    </div>
+                    <p className="text-gray-600 text-sm leading-relaxed">{aiExplanation.recommendation}</p>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -216,132 +311,6 @@ export default function Home() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8 }}
             >
-              {/* AI Insights */}
-              {(aiExplanation || isLoadingAI) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.6 }}
-                  className="mb-16"
-                >
-                  <div className="flex items-center gap-2 mb-6">
-                    <span className="text-2xl">✨</span>
-                    <h2 className="text-3xl font-bold text-black">AI Insights</h2>
-                  </div>
-                  
-                  {isLoadingAI ? (
-                    <div className="grid gap-4">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="bg-gray-100 rounded-2xl p-6 animate-pulse">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 bg-gray-300 rounded-xl"></div>
-                            <div className="h-5 bg-gray-300 rounded w-32"></div>
-                          </div>
-                          <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
-                          <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : aiExplanation && (
-                    <div className="grid gap-4">
-                      {/* Overview Card */}
-                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-                            <span className="text-white text-lg">📊</span>
-                          </div>
-                          <h3 className="font-semibold text-blue-900 text-lg">Spending Overview</h3>
-                        </div>
-                        <p className="text-blue-800 leading-relaxed">{aiExplanation.overview}</p>
-                      </div>
-
-                      {/* Insight Card */}
-                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-6">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
-                            <span className="text-white text-lg">💡</span>
-                          </div>
-                          <h3 className="font-semibold text-purple-900 text-lg">Key Insight</h3>
-                        </div>
-                        <p className="text-purple-800 leading-relaxed">{aiExplanation.insight}</p>
-                      </div>
-
-                      {/* Recommendation Card */}
-                      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
-                            <span className="text-white text-lg">🎯</span>
-                          </div>
-                          <h3 className="font-semibold text-emerald-900 text-lg">Money-Saving Tip</h3>
-                        </div>
-                        <p className="text-emerald-800 leading-relaxed">{aiExplanation.recommendation}</p>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
-
-              {/* Subscriptions */}
-              {analysis.subscriptions.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.6 }}
-                  className="mb-12"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">🔄</span>
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        Recurring Subscriptions
-                      </h2>
-                    </div>
-                    <div className="bg-red-50 border border-red-200 rounded-full px-3 py-1">
-                      <p className="text-sm font-semibold text-red-600">
-                        {formatCurrency(analysis.subscriptions.reduce((sum, sub) => sum + sub.amount, 0))}
-                        <span className="text-xs font-normal text-red-500">/mo</span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                    {analysis.subscriptions.map((sub, idx) => (
-                      <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 + idx * 0.05, duration: 0.3 }}
-                        className={`p-4 flex items-center justify-between hover:bg-red-50 transition-colors group ${idx !== 0 ? 'border-t border-gray-100' : ''}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 border border-red-200 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <span className="text-lg">💳</span>
-                          </div>
-                          <div>
-                            <p className="text-gray-900 font-medium capitalize">{sub.name}</p>
-                            <p className="text-gray-500 text-xs flex items-center gap-1">
-                              <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                              {sub.frequency}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-gray-900">
-                            {formatCurrency(sub.amount)}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {formatCurrency(sub.amount * 12)}/yr
-                          </p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                  <p className="text-center text-xs text-gray-400 mt-3">
-                    💡 Tip: Review these subscriptions to see if you still need them all
-                  </p>
-                </motion.div>
-              )}
-
               {/* Categories */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -350,7 +319,7 @@ export default function Home() {
                 className="mb-12"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-xl">📁</span>
+                  <FolderIcon className="w-5 h-5 text-gray-900" />
                   <h2 className="text-xl font-semibold text-gray-900">
                     Spending by Category
                   </h2>
@@ -359,14 +328,14 @@ export default function Home() {
                   {analysis.categorySpending.map((cat, idx) => {
                     const isExpanded = expandedCategories.has(cat.category);
                     const categoryColors = [
-                      'from-blue-500 to-blue-600',
-                      'from-purple-500 to-purple-600',
-                      'from-emerald-500 to-emerald-600',
-                      'from-amber-500 to-amber-600',
-                      'from-red-500 to-red-600',
-                      'from-indigo-500 to-indigo-600',
-                      'from-pink-500 to-pink-600',
-                      'from-teal-500 to-teal-600',
+                      'bg-gray-900',
+                      'bg-gray-700',
+                      'bg-gray-500',
+                      'bg-gray-600',
+                      'bg-gray-800',
+                      'bg-gray-400',
+                      'bg-gray-500',
+                      'bg-gray-700',
                     ];
                     const colorClass = categoryColors[idx % categoryColors.length];
                     
@@ -392,31 +361,37 @@ export default function Home() {
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
-                              <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${colorClass}`}></div>
+                              <div className={`w-2 h-2 rounded-full ${colorClass}`}></div>
                               <span className="text-gray-900 font-medium">{cat.category}</span>
                               <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                {cat.transactions.length} txns
+                                {cat.transactions.length}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-gray-900">
                                 {formatCurrency(cat.total)}
                               </span>
-                              <span className={`text-gray-400 text-sm transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                                ▼
-                              </span>
+                              <svg 
+                                className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                fill="none" 
+                                viewBox="0 0 24 24" 
+                                stroke="currentColor" 
+                                strokeWidth={2}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${cat.percentage}%` }}
                                 transition={{ delay: 0.7 + idx * 0.05, duration: 0.6, ease: "easeOut" }}
-                                className={`h-full bg-gradient-to-r ${colorClass} rounded-full`}
+                                className={`h-full ${colorClass} rounded-full`}
                               />
                             </div>
-                            <span className="text-sm font-medium text-gray-600 w-14 text-right">
+                            <span className="text-sm font-medium text-gray-500 w-14 text-right">
                               {cat.percentage.toFixed(1)}%
                             </span>
                           </div>
@@ -464,9 +439,9 @@ export default function Home() {
             transition={{ delay: 1, duration: 0.6 }}
             className="text-center pt-10 mt-8 border-t border-gray-200"
           >
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-8">
-              <div className="flex items-center justify-center gap-2 text-green-700">
-                <span className="text-lg">🔒</span>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-8">
+              <div className="flex items-center justify-center gap-2 text-gray-600">
+                <LockIcon className="w-4 h-4" />
                 <p className="text-sm font-medium">
                   Your files are analyzed locally and immediately discarded. Nothing is stored.
                 </p>
@@ -475,9 +450,9 @@ export default function Home() {
 
             <button
               onClick={resetAnalysis}
-              className="mb-8 bg-black text-white font-semibold py-3 px-6 rounded-xl hover:bg-gray-800 transition-colors"
+              className="mb-8 bg-gray-900 text-white font-semibold py-3 px-6 rounded-xl hover:bg-gray-800 transition-colors"
             >
-              Analyze Another Statement →
+              Analyze Another Statement
             </button>
 
             {/* Footer Navigation */}
@@ -516,7 +491,7 @@ export default function Home() {
           <h1 className="text-6xl sm:text-7xl font-bold tracking-tight text-black mb-4">
             just save
           </h1>
-          <p className="text-red-600 text-xl">
+          <p className="text-gray-600 text-xl">
             Find and cancel forgotten subscriptions
           </p>
         </div>
@@ -526,33 +501,33 @@ export default function Home() {
           href="https://github.com/tommyc10/just-save"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-3 mb-12 px-4 py-2 border-2 border-dashed border-red-300 rounded-full hover:bg-red-50 transition-colors"
+          className="inline-flex items-center gap-3 mb-12 px-4 py-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
         >
           <svg
-            className="w-5 h-5 text-red-500"
+            className="w-5 h-5 text-gray-900"
             fill="currentColor"
-            viewBox="0 0 20 20"
+            viewBox="0 0 24 24"
           >
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
           </svg>
-          <span className="text-sm font-semibold text-red-600">just save</span>
+          <span className="text-sm font-medium text-gray-900">Star on GitHub</span>
         </a>
 
         {/* Error */}
         {error && (
-          <div className="mb-8 border-2 border-dashed border-red-400 rounded-lg p-4 bg-red-50 text-red-700 text-center">
+          <div className="mb-8 border border-red-200 rounded-lg p-4 bg-red-50 text-red-700 text-center text-sm">
             {error}
           </div>
         )}
 
         {/* Upload Box */}
-        <div className="border-2 border-dashed border-red-300 rounded-lg mb-8">
+        <div className="border border-gray-200 rounded-2xl mb-8 overflow-hidden">
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={`p-16 text-center transition-all ${
-              isDragging ? 'bg-red-50 border-red-400' : 'hover:bg-gray-50'
+              isDragging ? 'bg-gray-50' : 'hover:bg-gray-50'
             }`}
           >
             <input
@@ -565,22 +540,27 @@ export default function Home() {
 
             {!file ? (
               <label htmlFor="file-upload" className="cursor-pointer block">
-                <p className="text-2xl font-bold text-black mb-2">
-                  Drop your monthly bank statement
+                <div className="mb-4">
+                  <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <p className="text-xl font-semibold text-gray-900 mb-2">
+                  Drop your bank statement here
                 </p>
-                <p className="text-red-600 mb-1">
-                  CSV or PDF • Supports UK & US banks • Takes under 90 seconds
+                <p className="text-gray-500 text-sm">
+                  CSV or PDF · Supports most banks · Under 90 seconds
                 </p>
               </label>
             ) : (
               <div>
-                <p className="text-2xl font-bold text-black mb-2">{file.name}</p>
-                <p className="text-red-600 mb-4">
+                <p className="text-xl font-semibold text-gray-900 mb-2">{file.name}</p>
+                <p className="text-gray-500 mb-4 text-sm">
                   {(file.size / 1024 / 1024).toFixed(2)} MB
                 </p>
                 <button
                   onClick={() => setFile(null)}
-                  className="text-red-600 hover:text-red-700 font-semibold text-sm"
+                  className="text-gray-500 hover:text-gray-900 font-medium text-sm"
                 >
                   Choose different file
                 </button>
@@ -589,84 +569,85 @@ export default function Home() {
           </div>
 
           {file && (
-            <div className="border-t-2 border-dashed border-red-300 p-6 bg-gray-50">
+            <div className="border-t border-gray-200 p-6 bg-gray-50">
               <button
                 onClick={analyzeFile}
                 disabled={isAnalyzing}
-                className="w-full bg-black text-white font-bold py-4 px-6 rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="w-full bg-gray-900 text-white font-semibold py-4 px-6 rounded-xl hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {isAnalyzing ? 'Analyzing...' : 'Analyze My Spending →'}
+                {isAnalyzing ? 'Analyzing...' : 'Analyze My Spending'}
               </button>
             </div>
           )}
         </div>
 
         {/* Privacy Notice */}
-        <p className="text-center text-red-600 text-sm">
-          Your files are analyzed and immediately discarded. Nothing is stored.
-        </p>
+        <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
+          <LockIcon className="w-4 h-4" />
+          <p>Your files are analyzed locally and immediately discarded.</p>
+        </div>
 
         {/* Social Proof Section */}
-        <div className="mt-24 pt-12 border-t-2 border-dashed border-red-200">
-          <h3 className="text-center text-2xl font-bold text-black mb-8">
-            Savings from our users
+        <div className="mt-24 pt-12 border-t border-gray-200">
+          <h3 className="text-center text-xl font-semibold text-gray-900 mb-8">
+            What users are saving
           </h3>
 
           <div className="grid sm:grid-cols-3 gap-6">
-            <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-3">
+            <div className="border border-gray-200 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-4">
                 <img src="/bobafett.png" alt="Boba Fett" className="w-10 h-10 rounded-full object-cover" />
-                <span className="font-semibold text-red-600">@bobafett</span>
+                <span className="font-medium text-gray-900">@bobafett</span>
               </div>
-              <p className="text-gray-700 mb-4 text-sm">
-                "This tool's worth every credit. Found subscriptions I forgot about like they were dodging Imperial entanglements."
+              <p className="text-gray-600 mb-4 text-sm leading-relaxed">
+                "Found subscriptions I forgot about. Simple and effective."
               </p>
-              <p className="text-xl font-black text-black">$240/yr</p>
+              <p className="text-2xl font-bold text-gray-900">$240<span className="text-sm font-normal text-gray-500">/yr</span></p>
             </div>
 
-            <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-3">
+            <div className="border border-gray-200 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-4">
                 <img src="/DinDjarin.png" alt="Din Djarin" className="w-10 h-10 rounded-full object-cover" />
-                <span className="font-semibold text-red-600">@themandalorian</span>
+                <span className="font-medium text-gray-900">@themandalorian</span>
               </div>
-              <p className="text-gray-700 mb-4 text-sm">
-                "This is the way. Found unwanted charges faster than finding a bounty on Tatooine."
+              <p className="text-gray-600 mb-4 text-sm leading-relaxed">
+                "Fast, private, and found charges I missed. Highly recommend."
               </p>
-              <p className="text-xl font-black text-black">$180/yr</p>
+              <p className="text-2xl font-bold text-gray-900">$180<span className="text-sm font-normal text-gray-500">/yr</span></p>
             </div>
 
-            <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
-              <div className="flex items-center gap-3 mb-3">
+            <div className="border border-gray-200 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-4">
                 <img src="/cadbane.png" alt="Cad Bane" className="w-10 h-10 rounded-full object-cover" />
-                <span className="font-semibold text-red-600">@cadbane</span>
+                <span className="font-medium text-gray-900">@cadbane</span>
               </div>
-              <p className="text-gray-700 mb-4 text-sm">
-                "A bounty hunter's gotta watch every credit. This caught subscriptions I didn't even know existed."
+              <p className="text-gray-600 mb-4 text-sm leading-relaxed">
+                "Clean interface, no data stored. Exactly what I needed."
               </p>
-              <p className="text-xl font-black text-black">$420/yr</p>
+              <p className="text-2xl font-bold text-gray-900">$420<span className="text-sm font-normal text-gray-500">/yr</span></p>
             </div>
           </div>
         </div>
 
         {/* Footer Navigation */}
-        <div className="mt-16 pt-8 border-t-2 border-dashed border-red-200">
+        <div className="mt-16 pt-8 border-t border-gray-200">
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
-            <Link href="/privacy" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/privacy" className="text-gray-500 hover:text-gray-900 transition-colors">
               Privacy
             </Link>
-            <Link href="/terms" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/terms" className="text-gray-500 hover:text-gray-900 transition-colors">
               Terms
             </Link>
-            <Link href="/faq" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/faq" className="text-gray-500 hover:text-gray-900 transition-colors">
               FAQ
             </Link>
-            <Link href="/changelog" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/changelog" className="text-gray-500 hover:text-gray-900 transition-colors">
               Changelog
             </Link>
-            <Link href="/refer" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/refer" className="text-gray-500 hover:text-gray-900 transition-colors">
               Refer & Earn
             </Link>
-            <Link href="/contact" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/contact" className="text-gray-500 hover:text-gray-900 transition-colors">
               Contact
             </Link>
           </div>
