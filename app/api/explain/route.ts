@@ -22,9 +22,35 @@ export async function POST(request: NextRequest) {
     });
 
     const textContent = message.content.find((block) => block.type === 'text');
-    const explanation = textContent && 'text' in textContent ? textContent.text : '';
-
-    return NextResponse.json({ explanation });
+    let rawText = textContent && 'text' in textContent ? textContent.text : '{}';
+    
+    // Clean up the response - remove markdown code blocks if present
+    rawText = rawText.trim();
+    if (rawText.startsWith('```json')) {
+      rawText = rawText.slice(7);
+    } else if (rawText.startsWith('```')) {
+      rawText = rawText.slice(3);
+    }
+    if (rawText.endsWith('```')) {
+      rawText = rawText.slice(0, -3);
+    }
+    rawText = rawText.trim();
+    
+    // Parse the JSON response
+    try {
+      const insights = JSON.parse(rawText);
+      return NextResponse.json({ insights });
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError, 'Raw text:', rawText);
+      // Fallback if JSON parsing fails
+      return NextResponse.json({ 
+        insights: { 
+          overview: rawText, 
+          insight: '', 
+          recommendation: '' 
+        } 
+      });
+    }
   } catch (error) {
     console.error('Error calling Claude API:', error);
     return NextResponse.json({ error: 'Failed to generate explanation' }, { status: 500 });
@@ -50,7 +76,7 @@ function buildPrompt(analysis: Analysis): string {
     )
     .join('\n');
 
-  return `You are a personal finance advisor. Analyze this spending data and provide clear, actionable insights in 3-4 short paragraphs.
+  return `You are a personal finance advisor. Analyze this spending data and provide clear, actionable insights.
 
 Total Spent: $${totalSpent.toFixed(2)}
 
@@ -60,10 +86,12 @@ ${subsList || 'None detected'}
 Spending by Category:
 ${categoryList}
 
-Please provide:
-1. A summary of their spending patterns (1-2 sentences)
-2. Notable insights about subscriptions or categories (1-2 sentences)
-3. One specific, actionable recommendation to save money (1-2 sentences)
+Respond with valid JSON only, no markdown, in this exact format:
+{
+  "overview": "1-2 sentence summary of their spending patterns",
+  "insight": "1-2 sentence notable insight about subscriptions or categories", 
+  "recommendation": "One specific, actionable tip to save money"
+}
 
-Keep it conversational, friendly, and avoid finance jargon. Focus on what's interesting or surprising about their spending.`;
+Keep it conversational and friendly. No finance jargon.`;
 }

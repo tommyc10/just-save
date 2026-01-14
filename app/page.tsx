@@ -30,7 +30,8 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [aiExplanation, setAiExplanation] = useState<string>('');
+  const [aiExplanation, setAiExplanation] = useState<{overview: string; insight: string; recommendation: string} | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [error, setError] = useState<string>('');
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -69,7 +70,7 @@ export default function Home() {
     ) {
       setFile(uploadedFile);
       setAnalysis(null);
-      setAiExplanation('');
+      setAiExplanation(null);
     } else {
       setError('Please upload a CSV or PDF file');
     }
@@ -98,6 +99,7 @@ export default function Home() {
         setShowBreakdown(true);
       }, 2500);
 
+      setIsLoadingAI(true);
       const response = await fetch('/api/explain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,12 +108,18 @@ export default function Home() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get AI insights');
+        console.error('API error:', errorData);
+        // Don't throw - just skip AI insights
+      } else {
+        const data = await response.json();
+        console.log('AI response:', data);
+        if (data.insights) {
+          setAiExplanation(data.insights);
+        }
       }
-
-      const { explanation } = await response.json();
-      setAiExplanation(explanation);
+      setIsLoadingAI(false);
     } catch (err: any) {
+      console.error('Analysis error:', err);
       setError(err.message || 'Failed to analyze file');
     } finally {
       setIsAnalyzing(false);
@@ -121,7 +129,8 @@ export default function Home() {
   const resetAnalysis = () => {
     setFile(null);
     setAnalysis(null);
-    setAiExplanation('');
+    setAiExplanation(null);
+    setIsLoadingAI(false);
     setError('');
     setShowBreakdown(false);
   };
@@ -129,20 +138,31 @@ export default function Home() {
   // Results View
   if (analysis) {
     return (
-      <div className="min-h-screen bg-white bg-dots">
-        <div className="mx-auto max-w-4xl px-6 py-12">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <div className="mx-auto max-w-2xl px-6 py-12">
           {/* Header */}
-          <div className="mb-16">
+          <div className="mb-10">
             <button
               onClick={resetAnalysis}
-              className="mb-8 text-red-600 hover:text-red-700 font-medium"
+              className="mb-6 text-gray-500 hover:text-gray-900 text-sm font-medium flex items-center gap-2 transition-colors group"
             >
-              ← Back
+              <span className="group-hover:-translate-x-1 transition-transform">←</span>
+              <span>Back to upload</span>
             </button>
-            <h1 className="text-5xl font-bold tracking-tight text-black mb-2">
-              your financial breakdown
-            </h1>
-            <p className="text-black text-lg">Analysis complete • {file?.name}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">
+                  Financial Overview
+                </h1>
+                <p className="text-gray-500 text-sm flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  {file?.name}
+                </p>
+              </div>
+              <div className="hidden sm:block">
+                <span className="text-4xl">📊</span>
+              </div>
+            </div>
           </div>
 
           {/* Animated Total - Always shows first */}
@@ -150,16 +170,44 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-16"
+            className="mb-10"
           >
-            <div className="border-2 border-dashed border-red-300 rounded-lg p-12 text-center bg-red-50/30">
-              <p className="text-red-600 text-sm uppercase tracking-wider mb-4 font-semibold">Total Spent This Month</p>
-              <h2 className="text-7xl font-bold text-black mb-4">
-                <AnimatedCounter value={analysis.totalSpent} duration={2} />
-              </h2>
-              <p className="text-gray-600 text-base">from your statement</p>
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-center shadow-xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+              <div className="relative">
+                <p className="text-gray-400 text-sm mb-2 uppercase tracking-wider">Total Spent</p>
+                <h2 className="text-5xl sm:text-6xl font-bold text-white mb-2">
+                  <AnimatedCounter value={analysis.totalSpent} duration={2} />
+                </h2>
+                <p className="text-gray-500 text-sm">this statement period</p>
+              </div>
             </div>
           </motion.div>
+
+          {/* Quick Stats Row */}
+          {showBreakdown && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="grid grid-cols-3 gap-3 mb-10"
+            >
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
+                <p className="text-2xl font-bold text-gray-900">{analysis.categorySpending.length}</p>
+                <p className="text-xs text-gray-500">Categories</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
+                <p className="text-2xl font-bold text-gray-900">{analysis.subscriptions.length}</p>
+                <p className="text-xs text-gray-500">Subscriptions</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(analysis.subscriptions.reduce((sum, sub) => sum + sub.amount * 12, 0))}
+                </p>
+                <p className="text-xs text-gray-500">Yearly Subs</p>
+              </div>
+            </motion.div>
+          )}
 
           {/* Breakdown - Shows after counter animation */}
           {showBreakdown && (
@@ -169,20 +217,67 @@ export default function Home() {
               transition={{ duration: 0.8 }}
             >
               {/* AI Insights */}
-              {aiExplanation && (
+              {(aiExplanation || isLoadingAI) && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1, duration: 0.6 }}
-                  className="mb-16 border-2 border-dashed border-red-300 rounded-lg p-8 bg-red-50/30"
+                  className="mb-16"
                 >
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-6">
                     <span className="text-2xl">✨</span>
-                    <h2 className="text-xl font-bold text-black">AI Analysis</h2>
+                    <h2 className="text-3xl font-bold text-black">AI Insights</h2>
                   </div>
-                  <p className="text-black leading-relaxed whitespace-pre-line text-lg">
-                    {aiExplanation}
-                  </p>
+                  
+                  {isLoadingAI ? (
+                    <div className="grid gap-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="bg-gray-100 rounded-2xl p-6 animate-pulse">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-gray-300 rounded-xl"></div>
+                            <div className="h-5 bg-gray-300 rounded w-32"></div>
+                          </div>
+                          <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
+                          <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : aiExplanation && (
+                    <div className="grid gap-4">
+                      {/* Overview Card */}
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                            <span className="text-white text-lg">📊</span>
+                          </div>
+                          <h3 className="font-semibold text-blue-900 text-lg">Spending Overview</h3>
+                        </div>
+                        <p className="text-blue-800 leading-relaxed">{aiExplanation.overview}</p>
+                      </div>
+
+                      {/* Insight Card */}
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
+                            <span className="text-white text-lg">💡</span>
+                          </div>
+                          <h3 className="font-semibold text-purple-900 text-lg">Key Insight</h3>
+                        </div>
+                        <p className="text-purple-800 leading-relaxed">{aiExplanation.insight}</p>
+                      </div>
+
+                      {/* Recommendation Card */}
+                      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+                            <span className="text-white text-lg">🎯</span>
+                          </div>
+                          <h3 className="font-semibold text-emerald-900 text-lg">Money-Saving Tip</h3>
+                        </div>
+                        <p className="text-emerald-800 leading-relaxed">{aiExplanation.recommendation}</p>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -193,54 +288,57 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.6 }}
-                  className="mb-16"
+                  className="mb-12"
                 >
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-3xl font-bold text-black">
-                      💳 Recurring Subscriptions
-                    </h2>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-red-600">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🔄</span>
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Recurring Subscriptions
+                      </h2>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-full px-3 py-1">
+                      <p className="text-sm font-semibold text-red-600">
                         {formatCurrency(analysis.subscriptions.reduce((sum, sub) => sum + sub.amount, 0))}
+                        <span className="text-xs font-normal text-red-500">/mo</span>
                       </p>
-                      <p className="text-sm text-gray-600">total per month</p>
                     </div>
                   </div>
-                  <div className="border-2 border-dashed border-red-300 rounded-lg divide-y-2 divide-dashed divide-red-300 bg-white">
+                  <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                     {analysis.subscriptions.map((sub, idx) => (
                       <motion.div
                         key={idx}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 + idx * 0.1, duration: 0.4 }}
-                        className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors group"
+                        transition={{ delay: 0.4 + idx * 0.05, duration: 0.3 }}
+                        className={`p-4 flex items-center justify-between hover:bg-red-50 transition-colors group ${idx !== 0 ? 'border-t border-gray-100' : ''}`}
                       >
-                        <div className="flex-1">
-                          <p className="text-black text-xl font-semibold mb-1 capitalize">{sub.name}</p>
-                          <div className="flex items-center gap-3">
-                            <span className="text-gray-600 text-sm">{sub.transactions.length} charges this month</span>
-                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 border border-red-200 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span className="text-lg">💳</span>
+                          </div>
+                          <div>
+                            <p className="text-gray-900 font-medium capitalize">{sub.name}</p>
+                            <p className="text-gray-500 text-xs flex items-center gap-1">
+                              <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                               {sub.frequency}
-                            </span>
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-3xl text-black group-hover:text-red-600 transition-colors">
+                          <p className="font-bold text-gray-900">
                             {formatCurrency(sub.amount)}
                           </p>
-                          <p className="text-gray-600 text-sm">/month</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {formatCurrency(sub.amount * 12)}/year
+                          <p className="text-xs text-gray-400">
+                            {formatCurrency(sub.amount * 12)}/yr
                           </p>
                         </div>
                       </motion.div>
                     ))}
                   </div>
-                  <div className="mt-4 p-4 bg-yellow-50 border-2 border-dashed border-yellow-300 rounded-lg">
-                    <p className="text-sm text-yellow-900">
-                      💡 <span className="font-semibold">Tip:</span> Review these subscriptions - canceling just one could save you hundreds per year!
-                    </p>
-                  </div>
+                  <p className="text-center text-xs text-gray-400 mt-3">
+                    💡 Tip: Review these subscriptions to see if you still need them all
+                  </p>
                 </motion.div>
               )}
 
@@ -249,21 +347,36 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
-                className="mb-16"
+                className="mb-12"
               >
-                <h2 className="text-3xl font-bold text-black mb-6">
-                  📊 Spending Breakdown
-                </h2>
-                <div className="border-2 border-dashed border-red-300 rounded-lg divide-y-2 divide-dashed divide-red-300 bg-white">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-xl">📁</span>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Spending by Category
+                  </h2>
+                </div>
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                   {analysis.categorySpending.map((cat, idx) => {
                     const isExpanded = expandedCategories.has(cat.category);
+                    const categoryColors = [
+                      'from-blue-500 to-blue-600',
+                      'from-purple-500 to-purple-600',
+                      'from-emerald-500 to-emerald-600',
+                      'from-amber-500 to-amber-600',
+                      'from-red-500 to-red-600',
+                      'from-indigo-500 to-indigo-600',
+                      'from-pink-500 to-pink-600',
+                      'from-teal-500 to-teal-600',
+                    ];
+                    const colorClass = categoryColors[idx % categoryColors.length];
+                    
                     return (
                       <motion.div
                         key={idx}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.6 + idx * 0.1, duration: 0.4 }}
-                        className="hover:bg-gray-50 transition-colors"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 + idx * 0.05, duration: 0.3 }}
+                        className={idx !== 0 ? 'border-t border-gray-100' : ''}
                       >
                         <button
                           onClick={() => {
@@ -275,34 +388,35 @@ export default function Home() {
                             }
                             setExpandedCategories(newExpanded);
                           }}
-                          className="w-full p-6 text-left"
+                          className="w-full p-4 text-left hover:bg-gray-50 transition-colors"
                         >
-                          <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
-                              <span className="text-black text-xl font-semibold">{cat.category}</span>
-                              <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-700">
-                                {cat.count} {cat.count === 1 ? 'transaction' : 'transactions'}
-                              </span>
-                              <span className="text-gray-400 text-sm">
-                                {isExpanded ? '▼' : '▶'}
+                              <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${colorClass}`}></div>
+                              <span className="text-gray-900 font-medium">{cat.category}</span>
+                              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                {cat.transactions.length} txns
                               </span>
                             </div>
-                            <div className="text-right">
-                              <span className="font-bold text-2xl text-black">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-gray-900">
                                 {formatCurrency(cat.total)}
+                              </span>
+                              <span className={`text-gray-400 text-sm transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                                ▼
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${cat.percentage}%` }}
-                                transition={{ delay: 0.7 + idx * 0.1, duration: 0.8, ease: "easeOut" }}
-                                className="h-full bg-linear-to-r from-red-500 to-red-600 rounded-full"
+                                transition={{ delay: 0.7 + idx * 0.05, duration: 0.6, ease: "easeOut" }}
+                                className={`h-full bg-gradient-to-r ${colorClass} rounded-full`}
                               />
                             </div>
-                            <span className="text-base font-bold text-red-600 w-14 text-right">
+                            <span className="text-sm font-medium text-gray-600 w-14 text-right">
                               {cat.percentage.toFixed(1)}%
                             </span>
                           </div>
@@ -314,24 +428,22 @@ export default function Home() {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="px-6 pb-6"
+                            transition={{ duration: 0.2 }}
+                            className="px-4 pb-4"
                           >
-                            <div className="border-t-2 border-dashed border-gray-200 pt-4 space-y-3">
+                            <div className="bg-gray-50 rounded-xl p-3 space-y-1 max-h-64 overflow-y-auto">
                               {cat.transactions.map((transaction, txIdx) => (
                                 <div
                                   key={txIdx}
-                                  className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                  className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white transition-colors border border-transparent hover:border-gray-200"
                                 >
-                                  <div className="flex-1">
-                                    <p className="text-black font-medium">{transaction.description}</p>
-                                    <p className="text-xs text-gray-500 mt-1">{transaction.date}</p>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-gray-800 text-sm font-medium truncate">{transaction.description}</p>
+                                    <p className="text-xs text-gray-400">{transaction.date}</p>
                                   </div>
-                                  <div className="text-right">
-                                    <p className="text-lg font-bold text-black">
-                                      {formatCurrency(transaction.amount)}
-                                    </p>
-                                  </div>
+                                  <p className="text-sm font-semibold text-gray-900 ml-3">
+                                    {formatCurrency(transaction.amount)}
+                                  </p>
                                 </div>
                               ))}
                             </div>
@@ -346,33 +458,50 @@ export default function Home() {
           )}
 
           {/* Footer */}
-          <div className="text-center pt-8 border-t-2 border-dashed border-red-200">
-            <p className="text-red-600 text-sm mb-8">
-              Your files are analyzed locally and immediately discarded. Nothing is stored.
-            </p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1, duration: 0.6 }}
+            className="text-center pt-10 mt-8 border-t border-gray-200"
+          >
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-8">
+              <div className="flex items-center justify-center gap-2 text-green-700">
+                <span className="text-lg">🔒</span>
+                <p className="text-sm font-medium">
+                  Your files are analyzed locally and immediately discarded. Nothing is stored.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={resetAnalysis}
+              className="mb-8 bg-black text-white font-semibold py-3 px-6 rounded-xl hover:bg-gray-800 transition-colors"
+            >
+              Analyze Another Statement →
+            </button>
 
             {/* Footer Navigation */}
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
-              <Link href="/privacy" className="text-black hover:text-red-600 transition-colors">
+              <Link href="/privacy" className="text-gray-500 hover:text-gray-900 transition-colors">
                 Privacy
               </Link>
-              <Link href="/terms" className="text-black hover:text-red-600 transition-colors">
+              <Link href="/terms" className="text-gray-500 hover:text-gray-900 transition-colors">
                 Terms
               </Link>
-              <Link href="/faq" className="text-black hover:text-red-600 transition-colors">
+              <Link href="/faq" className="text-gray-500 hover:text-gray-900 transition-colors">
                 FAQ
               </Link>
-              <Link href="/changelog" className="text-black hover:text-red-600 transition-colors">
+              <Link href="/changelog" className="text-gray-500 hover:text-gray-900 transition-colors">
                 Changelog
               </Link>
-              <Link href="/refer" className="text-black hover:text-red-600 transition-colors">
+              <Link href="/refer" className="text-gray-500 hover:text-gray-900 transition-colors">
                 Refer & Earn
               </Link>
-              <Link href="/contact" className="text-black hover:text-red-600 transition-colors">
+              <Link href="/contact" className="text-gray-500 hover:text-gray-900 transition-colors">
                 Contact
               </Link>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     );
