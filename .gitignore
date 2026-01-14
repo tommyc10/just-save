@@ -42,3 +42,10 @@ next-env.d.ts
 
 # docs
 /docs
+LEARNING_GUIDE.md
+SETUP.md
+QUICKSTART.md
+BACKGROUND_OPTIONS.md
+
+# images
+*.png
