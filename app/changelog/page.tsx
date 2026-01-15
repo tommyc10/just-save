@@ -22,6 +22,18 @@ export default function ChangelogPage() {
 
         {/* Updates */}
         <div className="space-y-12">
+          {/* Update 0 - Latest */}
+          <div>
+            <p className="text-gray-500 text-sm font-medium mb-2">JANUARY 15, 2026</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Full AI-Powered Parsing</h2>
+            <p className="text-gray-600 leading-relaxed">
+              Completely refactored CSV and PDF parsing to be 100% AI-driven. No more hardcoded column
+              detection or keyword matching—Claude now intelligently handles any bank statement format,
+              accurately categorizes transactions, and detects subscriptions by analyzing spending patterns.
+            </p>
+            <div className="mt-6 pt-6 border-t border-gray-200" />
+          </div>
+
           {/* Update 1 */}
           <div>
             <p className="text-gray-500 text-sm font-medium mb-2">JANUARY 14, 2026</p>
