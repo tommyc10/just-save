@@ -53,3 +53,5 @@ BACKGROUND_OPTIONS.md
 
 # Sensitive sample data
 sample-data/*.pdf
+AMEX-*.pdf
+*.pdf

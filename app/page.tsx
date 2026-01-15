@@ -74,7 +74,6 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [aiExplanation, setAiExplanation] = useState<{overview: string; insight: string; recommendation: string} | null>(null);
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [error, setError] = useState<string>('');
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -127,6 +126,7 @@ export default function Home() {
     setExpandedCategories(new Set());
 
     try {
+      // Step 1: Parse the file (CSV or PDF) using AI
       let transactions;
       if (file.name.toLowerCase().endsWith('.csv')) {
         transactions = await parseCSV(file);
@@ -134,33 +134,20 @@ export default function Home() {
         transactions = await parsePDF(file);
       }
 
-      const result = analyzeTransactions(transactions);
+      // Step 2: Analyze transactions using AI (includes categorization, subscriptions, and insights)
+      const result = await analyzeTransactions(transactions);
       setAnalysis(result);
+
+      // Extract insights from the unified analysis
+      if (result.insights) {
+        setAiExplanation(result.insights);
+      }
 
       // Show breakdown after counter animation (2.5 seconds)
       setTimeout(() => {
         setShowBreakdown(true);
       }, 2500);
 
-      setIsLoadingAI(true);
-      const response = await fetch('/api/explain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ analysis: result }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('API error:', errorData);
-        // Don't throw - just skip AI insights
-      } else {
-        const data = await response.json();
-        console.log('AI response:', data);
-        if (data.insights) {
-          setAiExplanation(data.insights);
-        }
-      }
-      setIsLoadingAI(false);
     } catch (err: any) {
       console.error('Analysis error:', err);
       setError(err.message || 'Failed to analyze file');
@@ -173,7 +160,6 @@ export default function Home() {
     setFile(null);
     setAnalysis(null);
     setAiExplanation(null);
-    setIsLoadingAI(false);
     setError('');
     setShowBreakdown(false);
   };
@@ -254,7 +240,7 @@ export default function Home() {
           </div>
 
           {/* AI Insights - Compact horizontal layout */}
-          {showBreakdown && (aiExplanation || isLoadingAI) && (
+          {showBreakdown && aiExplanation && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -266,41 +252,29 @@ export default function Home() {
                 <h2 className="text-xl font-bold text-black">Insights</h2>
               </div>
               
-              {isLoadingAI ? (
-                <div className="grid md:grid-cols-3 gap-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-gray-100 rounded-xl p-4 animate-pulse">
-                      <div className="h-4 bg-gray-300 rounded w-24 mb-2"></div>
-                      <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
-                      <div className="h-3 bg-gray-300 rounded w-3/4"></div>
-                    </div>
-                  ))}
+              <div className="grid md:grid-cols-3 gap-3">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ChartIcon className="w-4 h-4 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm">Overview</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed">{aiExplanation.overview}</p>
                 </div>
-              ) : aiExplanation && (
-                <div className="grid md:grid-cols-3 gap-3">
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ChartIcon className="w-4 h-4 text-gray-600" />
-                      <h3 className="font-semibold text-gray-900 text-sm">Overview</h3>
-                    </div>
-                    <p className="text-gray-600 text-sm leading-relaxed">{aiExplanation.overview}</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <LightbulbIcon className="w-4 h-4 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm">Key Insight</h3>
                   </div>
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <LightbulbIcon className="w-4 h-4 text-gray-600" />
-                      <h3 className="font-semibold text-gray-900 text-sm">Key Insight</h3>
-                    </div>
-                    <p className="text-gray-600 text-sm leading-relaxed">{aiExplanation.insight}</p>
-                  </div>
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TargetIcon className="w-4 h-4 text-gray-600" />
-                      <h3 className="font-semibold text-gray-900 text-sm">Recommendation</h3>
-                    </div>
-                    <p className="text-gray-600 text-sm leading-relaxed">{aiExplanation.recommendation}</p>
-                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed">{aiExplanation.insight}</p>
                 </div>
-              )}
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TargetIcon className="w-4 h-4 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900 text-sm">Recommendation</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed">{aiExplanation.recommendation}</p>
+                </div>
+              </div>
             </motion.div>
           )}
 

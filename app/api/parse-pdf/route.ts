@@ -28,7 +28,20 @@ export async function POST(request: NextRequest) {
     const parser = new PDFParse({ data: buffer, verbosity: 0, useSystemFonts: true });
     const { text } = await parser.getText();
 
+    // Debug: Log the extracted text to see what we're working with
+    console.log('=== PDF TEXT EXTRACTED ===');
+    console.log('Text length:', text.length);
+    console.log('First 2000 chars:', text.substring(0, 2000));
+    console.log('=== END PDF TEXT ===');
+
     const transactions = await extractTransactionsWithAI(text);
+
+    // Debug: Log what Claude extracted
+    console.log('=== TRANSACTIONS EXTRACTED ===');
+    console.log('Count:', transactions.length);
+    console.log('Total (debits only):', transactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0));
+    console.log('Transactions:', JSON.stringify(transactions, null, 2));
+    console.log('=== END TRANSACTIONS ===');
 
     if (!transactions.length) {
       return NextResponse.json(
@@ -50,25 +63,71 @@ export async function POST(request: NextRequest) {
 async function extractTransactionsWithAI(text: string): Promise<Transaction[]> {
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
+    max_tokens: 8192,
     messages: [{
       role: 'user',
-      content: `Extract all transactions from this bank statement. Return ONLY a JSON array with this structure:
-[{"date": "DD Mon YYYY", "description": "cleaned description", "amount": positive_number, "type": "debit" or "credit"}]
+      content: `Extract ALL transactions from this credit card statement as a JSON array.
 
-Rules: Skip balances, clean descriptions, extract debits and credits only.
+RESPOND WITH ONLY A JSON ARRAY - NO OTHER TEXT.
 
-${text}`
+Format: [{"date": "DD Mon YYYY", "description": "merchant name", "amount": number, "type": "debit" or "credit"}]
+
+Rules:
+- Transaction lines look like: "Oct 20 Oct 20 DELIVEROO LONDON" followed by amounts in a separate column
+- Match each transaction description to its amount BY POSITION (1st transaction = 1st amount)
+- Amount must be a positive number
+- Type is "debit" for purchases, "credit" for refunds (marked CR)
+- SKIP summary lines like "Total new spend transactions"
+- Use GBP amounts only
+
+Statement:
+${text}
+
+RESPOND WITH ONLY THE JSON ARRAY, NOTHING ELSE:`
     }]
   });
 
   const content = message.content[0];
   if (content.type !== 'text') throw new Error('Unexpected response type from Claude');
 
-  let jsonText = content.text.trim()
-    .replace(/^```json\n/, '')
-    .replace(/^```\n/, '')
-    .replace(/\n```$/, '');
+  let jsonText = content.text.trim();
+  
+  // Remove markdown code blocks if present
+  if (jsonText.startsWith('```json')) {
+    jsonText = jsonText.slice(7);
+  } else if (jsonText.startsWith('```')) {
+    jsonText = jsonText.slice(3);
+  }
+  if (jsonText.endsWith('```')) {
+    jsonText = jsonText.slice(0, -3);
+  }
+  jsonText = jsonText.trim();
+  
+  // Try to find JSON array in the response if it's not pure JSON
+  if (!jsonText.startsWith('[')) {
+    const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[0];
+    } else {
+      console.error('AI response was not JSON:', jsonText.substring(0, 500));
+      throw new Error('Failed to extract transactions. Please try again.');
+    }
+  }
 
-  return JSON.parse(jsonText) as Transaction[];
+  try {
+    const transactions = JSON.parse(jsonText) as Transaction[];
+    return transactions.filter(
+      (t) =>
+        t &&
+        typeof t.date === 'string' &&
+        typeof t.description === 'string' &&
+        typeof t.amount === 'number' &&
+        !isNaN(t.amount) &&
+        t.amount > 0 &&
+        (t.type === 'debit' || t.type === 'credit')
+    );
+  } catch (parseError) {
+    console.error('Failed to parse JSON:', parseError, 'Text:', jsonText.substring(0, 500));
+    throw new Error('Failed to parse transactions. Please try again.');
+  }
 }
