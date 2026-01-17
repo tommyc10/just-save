@@ -1,31 +1,37 @@
 'use client';
 
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-white bg-dots">
+    <div className="min-h-screen bg-background bg-dots relative">
+      {/* Theme Toggle */}
+      <div className="absolute top-6 right-6">
+        <ThemeToggle />
+      </div>
+
       <div className="mx-auto max-w-3xl px-6 py-12">
         {/* Back Button */}
         <Link
           href="/"
-          className="inline-flex items-center text-red-600 hover:text-red-700 font-medium mb-8"
+          className="inline-flex items-center text-muted-foreground hover:text-foreground font-medium mb-8 transition-colors"
         >
           ← Back
         </Link>
 
         {/* Header */}
-        <h1 className="text-5xl font-bold tracking-tight text-black mb-2">
+        <h1 className="text-5xl font-bold tracking-tight text-foreground mb-2">
           Privacy Policy
         </h1>
-        <p className="text-gray-600 text-lg mb-12">Last updated: January 2026</p>
+        <p className="text-muted-foreground text-lg mb-12">Last updated: January 2026</p>
 
         {/* Content */}
         <div className="space-y-12">
           {/* The Short Version */}
           <section>
-            <h2 className="text-2xl font-bold text-black mb-4">The Short Version</h2>
-            <p className="text-black leading-relaxed mb-4">
+            <h2 className="text-2xl font-bold text-foreground mb-4">The Short Version</h2>
+            <p className="text-foreground leading-relaxed mb-4">
               <strong>We don't store your financial data.</strong> Your statements are analyzed and immediately
               discarded. Results are stored only in your browser's local storage, not on our servers.
             </p>
@@ -33,8 +39,8 @@ export default function PrivacyPage() {
 
           {/* What We Process */}
           <section>
-            <h2 className="text-2xl font-bold text-black mb-4">What We Process</h2>
-            <ul className="space-y-3 text-black">
+            <h2 className="text-2xl font-bold text-foreground mb-4">What We Process</h2>
+            <ul className="space-y-3 text-foreground">
               <li className="flex gap-3">
                 <span>•</span>
                 <div>
@@ -53,12 +59,12 @@ export default function PrivacyPage() {
 
           {/* Zero-Storage Architecture */}
           <section>
-            <h2 className="text-2xl font-bold text-black mb-4">Zero-Storage Architecture</h2>
-            <p className="text-black leading-relaxed mb-4">
+            <h2 className="text-2xl font-bold text-foreground mb-4">Zero-Storage Architecture</h2>
+            <p className="text-foreground leading-relaxed mb-4">
               After analysis, your subscription results are sent directly to your browser and stored in{' '}
-              <code className="bg-gray-100 px-2 py-1 rounded text-sm">localStorage</code>. This means:
+              <code className="bg-muted px-2 py-1 rounded text-sm">localStorage</code>. This means:
             </p>
-            <ul className="space-y-2 text-black">
+            <ul className="space-y-2 text-foreground">
               <li className="flex gap-3">
                 <span>•</span>
                 <div>Your data never touches our database</div>
@@ -80,8 +86,8 @@ export default function PrivacyPage() {
 
           {/* What We Do Store */}
           <section>
-            <h2 className="text-2xl font-bold text-black mb-4">What We Do Store</h2>
-            <ul className="space-y-3 text-black">
+            <h2 className="text-2xl font-bold text-foreground mb-4">What We Do Store</h2>
+            <ul className="space-y-3 text-foreground">
               <li className="flex gap-3">
                 <span>•</span>
                 <div>
@@ -99,24 +105,24 @@ export default function PrivacyPage() {
         </div>
 
         {/* Footer Navigation */}
-        <div className="mt-16 pt-8 border-t-2 border-dashed border-red-200">
+        <div className="mt-16 pt-8 border-t border-border">
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
-            <Link href="/privacy" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
               Privacy
             </Link>
-            <Link href="/terms" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
               Terms
             </Link>
-            <Link href="/faq" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/faq" className="text-muted-foreground hover:text-foreground transition-colors">
               FAQ
             </Link>
-            <Link href="/changelog" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/changelog" className="text-muted-foreground hover:text-foreground transition-colors">
               Changelog
             </Link>
-            <Link href="/refer" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/refer" className="text-muted-foreground hover:text-foreground transition-colors">
               Refer & Earn
             </Link>
-            <Link href="/contact" className="text-black hover:text-red-600 transition-colors">
+            <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
               Contact
             </Link>
           </div>

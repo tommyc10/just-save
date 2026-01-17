@@ -1,15 +1,11 @@
-export interface Transaction {
-  date: string;
-  description: string;
-  amount: number;
-  type: 'debit' | 'credit';
-}
+// Re-export Transaction type from centralized types
+export type { Transaction } from './types';
 
 /**
  * Parse CSV bank statement using AI
  * Handles any bank format - AI intelligently identifies columns and extracts transactions
  */
-export async function parseCSV(file: File): Promise<Transaction[]> {
+export async function parseCSV(file: File) {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -31,7 +27,7 @@ export async function parseCSV(file: File): Promise<Transaction[]> {
  * Parse PDF bank statement using AI
  * Extracts transactions from unstructured PDF text
  */
-export async function parsePDF(file: File): Promise<Transaction[]> {
+export async function parsePDF(file: File) {
   const formData = new FormData();
   formData.append('file', file);
 

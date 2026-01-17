@@ -1,31 +1,13 @@
-import { Transaction } from './parsers';
+// Re-export types from centralized types
+export type {
+  Transaction,
+  Subscription,
+  CategorySpending,
+  AIInsights,
+  Analysis,
+} from './types';
 
-export interface Subscription {
-  name: string;
-  amount: number;
-  frequency: 'weekly' | 'monthly' | 'quarterly' | 'annual' | 'unknown';
-  confidence?: 'high' | 'medium' | 'low';
-  transactions: Transaction[];
-}
-
-export interface CategorySpending {
-  category: string;
-  total: number;
-  percentage: number;
-  count: number;
-  transactions: Transaction[];
-}
-
-export interface Analysis {
-  subscriptions: Subscription[];
-  categorySpending: CategorySpending[];
-  totalSpent: number;
-  insights?: {
-    overview: string;
-    insight: string;
-    recommendation: string;
-  };
-}
+import type { Transaction, Analysis } from './types';
 
 /**
  * Analyze transactions using AI
