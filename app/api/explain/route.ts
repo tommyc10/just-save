@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
  * Build the prompt for Claude to generate insights
  */
 function buildPrompt(analysis: Analysis): string {
-  const { subscriptions, categorySpending, totalSpent, averageMonthlySpending } = analysis;
+  const { subscriptions, categorySpending, totalSpent } = analysis;
 
   // Format subscriptions list
   const subsList = subscriptions
@@ -71,7 +71,6 @@ function buildPrompt(analysis: Analysis): string {
   return `You are a personal finance advisor. Analyze this spending data and provide clear, actionable insights in 3-4 short paragraphs.
 
 Total Spent: $${totalSpent.toFixed(2)}
-Average Monthly Spending: $${averageMonthlySpending.toFixed(2)}
 
 Subscriptions Found (${subscriptions.length}):
 ${subsList || 'None detected'}

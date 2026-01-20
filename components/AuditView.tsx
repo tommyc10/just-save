@@ -2,10 +2,21 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CategorizedSubscription, AuditReport } from '@/lib/types';
+import { CategorizedSubscription } from '@/lib/types';
 import { formatCurrency } from '@/lib/parsers';
 import { ThemeToggle } from './ThemeToggle';
-import { LockIcon } from './Icons';
+import {
+  ArrowLeftIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  DocumentIcon,
+  CopyIcon,
+  XCircleIcon,
+  QuestionCircleIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  PiggyBankIcon,
+} from './Icons';
 
 interface AuditViewProps {
   subscriptions: CategorizedSubscription[];
@@ -17,13 +28,12 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
   const [selectedForCancel, setSelectedForCancel] = useState<Set<string>>(new Set());
   const [privacyMode, setPrivacyMode] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [copySuccess, setCopySuccess] = useState(false);
 
-  // Categorize subscriptions
   const cancelled = subscriptions.filter((s) => s.category === 'cancel');
   const investigate = subscriptions.filter((s) => s.category === 'investigate');
   const keep = subscriptions.filter((s) => s.category === 'keep');
 
-  // Calculate savings (from cancelled subscriptions)
   const yearlySavings = cancelled.reduce((sum, sub) => {
     const yearly =
       sub.frequency === 'monthly'
@@ -60,160 +70,201 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
 
   const handleCopy = () => {
     const selected = investigate.filter((s) => selectedForCancel.has(s.name));
-    const text = `Cancel these:\n${selected
-      .map((s) => `${s.name} (${formatCurrency(s.amount)}/${s.frequency})`)
+    const text = `Cancel these subscriptions:\n\n${selected
+      .map((s) => `• ${s.name} - ${formatCurrency(s.amount)}/${s.frequency}`)
       .join('\n')}`;
 
     navigator.clipboard.writeText(text);
-
-    // Show feedback
-    alert('Copied to clipboard! Paste in chat to get cancellation help.');
-  };
-
-  const getYearlyAmount = (sub: CategorizedSubscription) => {
-    switch (sub.frequency) {
-      case 'monthly':
-        return sub.amount * 12;
-      case 'annual':
-        return sub.amount;
-      case 'quarterly':
-        return sub.amount * 4;
-      case 'weekly':
-        return sub.amount * 52;
-      default:
-        return sub.amount * 12;
-    }
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
   };
 
   return (
-    <div className="min-h-screen bg-background bg-dots relative">
-      {/* Theme Toggle */}
-      <div className="absolute top-6 right-6">
-        <ThemeToggle />
-      </div>
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Grid background */}
+      <div className="absolute inset-0 bg-grid opacity-30" />
 
-      <div className="mx-auto max-w-4xl px-6 py-12">
+      {/* Theme Toggle */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+        className="absolute top-8 right-8 z-20"
+      >
+        <ThemeToggle />
+      </motion.div>
+
+      <div className="relative z-10 mx-auto max-w-5xl px-6 py-12">
         {/* Header */}
-        <div className="mb-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-10"
+        >
           <button
             onClick={onBack}
-            className="mb-6 text-muted-foreground hover:text-foreground text-sm font-medium flex items-center gap-2 transition-colors group"
+            className="mb-8 text-muted-foreground hover:text-foreground text-sm font-medium flex items-center gap-2 transition-colors group"
           >
-            <span className="group-hover:-translate-x-1 transition-transform">←</span>
+            <ArrowLeftIcon className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span>Back to categorization</span>
           </button>
 
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-bold text-foreground mb-2">Subscription Audit</h1>
+              <h1 className="font-serif text-4xl md:text-5xl text-foreground mb-3">
+                Subscription Audit
+              </h1>
               <p className="text-muted-foreground text-sm">
-                Found {subscriptions.length} subscriptions · {subscriptions.reduce((sum, s) => sum + s.transactions.length, 0)} transactions
+                Found {subscriptions.length} subscriptions ·{' '}
+                {subscriptions.reduce((sum, s) => sum + s.transactions.length, 0)} transactions analyzed
               </p>
             </div>
 
-            {/* Controls */}
+            {/* Action Buttons */}
             <div className="flex items-center gap-3">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setPrivacyMode(!privacyMode)}
-                className="px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors flex items-center gap-2 text-sm font-medium text-foreground"
+                className="px-4 py-2.5 border border-border rounded-xl bg-card hover:bg-accent transition-all flex items-center gap-2 text-sm font-medium text-foreground stat-glow"
               >
-                <LockIcon className="w-4 h-4" />
-                {privacyMode ? 'Show' : 'Hide'} Names
-              </button>
-              <button
+                {privacyMode ? (
+                  <EyeIcon className="w-4 h-4" />
+                ) : (
+                  <EyeSlashIcon className="w-4 h-4" />
+                )}
+                {privacyMode ? 'Show Names' : 'Hide Names'}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onExportHTML}
-                className="px-4 py-2 bg-foreground text-background font-semibold rounded-lg hover:opacity-90 transition-opacity text-sm"
+                className="px-4 py-2.5 bg-foreground text-background font-semibold rounded-xl btn-premium transition-all flex items-center gap-2 text-sm"
               >
+                <DocumentIcon className="w-4 h-4" />
                 Export HTML
-              </button>
+              </motion.button>
             </div>
+          </div>
+        </motion.div>
+
+        {/* Summary Stats Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10"
+        >
+          <div className="bg-card border border-border rounded-2xl p-5 stat-glow">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-negative-muted flex items-center justify-center">
+                <XCircleIcon className="w-4 h-4 text-negative" />
+              </div>
+            </div>
+            <p className="font-mono text-2xl font-bold text-foreground">{cancelled.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Cancelled</p>
           </div>
 
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-card border border-border rounded-xl p-6">
-              <p className="text-sm text-muted-foreground mb-1">Cancelled</p>
-              <p className="text-3xl font-bold text-foreground">{cancelled.length}</p>
+          <div className="bg-card border border-border rounded-2xl p-5 stat-glow">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-warning-muted flex items-center justify-center">
+                <QuestionCircleIcon className="w-4 h-4 text-warning" />
+              </div>
             </div>
-            <div className="bg-card border border-border rounded-xl p-6">
-              <p className="text-sm text-muted-foreground mb-1">Needs Decision</p>
-              <p className="text-3xl font-bold text-foreground">{investigate.length}</p>
-            </div>
-            <div className="bg-card border border-border rounded-xl p-6">
-              <p className="text-sm text-muted-foreground mb-1">Yearly Savings</p>
-              <p className="text-3xl font-bold text-green-500">{formatCurrency(yearlySavings)}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                ({formatCurrency(monthlySavings)}/mo)
-              </p>
-            </div>
+            <p className="font-mono text-2xl font-bold text-foreground">{investigate.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Needs Decision</p>
           </div>
+
+          <div className="bg-card border border-border rounded-2xl p-5 stat-glow">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-positive-muted flex items-center justify-center">
+                <CheckCircleIcon className="w-4 h-4 text-positive" />
+              </div>
+            </div>
+            <p className="font-mono text-2xl font-bold text-foreground">{keep.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Keeping</p>
+          </div>
+
+          <div className="bg-positive-muted border border-positive/20 rounded-2xl p-5 positive-glow">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-positive/20 flex items-center justify-center">
+                <PiggyBankIcon className="w-4 h-4 text-positive" />
+              </div>
+            </div>
+            <p className="font-mono text-2xl font-bold text-positive">{formatCurrency(yearlySavings)}</p>
+            <p className="text-xs text-positive/70 mt-1">
+              Yearly Savings ({formatCurrency(monthlySavings)}/mo)
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Sections */}
+        <div className="space-y-6">
+          {/* Cancelled Section */}
+          {cancelled.length > 0 && (
+            <Section
+              title="Cancelled"
+              count={cancelled.length}
+              colorScheme="negative"
+              collapsed={collapsedSections.has('cancelled')}
+              onToggle={() => toggleSection('cancelled')}
+            >
+              {cancelled.map((sub) => (
+                <SubscriptionRow
+                  key={sub.name}
+                  subscription={sub}
+                  privacyMode={privacyMode}
+                  colorScheme="negative"
+                  strikethrough
+                />
+              ))}
+            </Section>
+          )}
+
+          {/* Needs Decision Section */}
+          {investigate.length > 0 && (
+            <Section
+              title="Needs Decision"
+              count={investigate.length}
+              colorScheme="warning"
+              collapsed={collapsedSections.has('investigate')}
+              onToggle={() => toggleSection('investigate')}
+            >
+              {investigate.map((sub) => (
+                <SubscriptionRow
+                  key={sub.name}
+                  subscription={sub}
+                  privacyMode={privacyMode}
+                  colorScheme="warning"
+                  selectable
+                  selected={selectedForCancel.has(sub.name)}
+                  onToggleSelect={() => toggleSelect(sub.name)}
+                />
+              ))}
+            </Section>
+          )}
+
+          {/* Keeping Section */}
+          {keep.length > 0 && (
+            <Section
+              title="Keeping"
+              count={keep.length}
+              colorScheme="positive"
+              collapsed={collapsedSections.has('keep')}
+              onToggle={() => toggleSection('keep')}
+            >
+              {keep.map((sub) => (
+                <SubscriptionRow
+                  key={sub.name}
+                  subscription={sub}
+                  privacyMode={privacyMode}
+                  colorScheme="positive"
+                />
+              ))}
+            </Section>
+          )}
         </div>
-
-        {/* Cancelled Section */}
-        {cancelled.length > 0 && (
-          <Section
-            title="Cancelled"
-            count={cancelled.length}
-            badge="green"
-            collapsed={collapsedSections.has('cancelled')}
-            onToggle={() => toggleSection('cancelled')}
-          >
-            {cancelled.map((sub) => (
-              <SubscriptionRow
-                key={sub.name}
-                subscription={sub}
-                privacyMode={privacyMode}
-                badge="Cancelled"
-                badgeColor="green"
-              />
-            ))}
-          </Section>
-        )}
-
-        {/* Needs Decision Section */}
-        {investigate.length > 0 && (
-          <Section
-            title="Needs Decision"
-            count={investigate.length}
-            badge="orange"
-            collapsed={collapsedSections.has('investigate')}
-            onToggle={() => toggleSection('investigate')}
-          >
-            {investigate.map((sub) => (
-              <SubscriptionRow
-                key={sub.name}
-                subscription={sub}
-                privacyMode={privacyMode}
-                badge="Investigate"
-                badgeColor="orange"
-                selectable
-                selected={selectedForCancel.has(sub.name)}
-                onToggleSelect={() => toggleSelect(sub.name)}
-              />
-            ))}
-          </Section>
-        )}
-
-        {/* Keeping Section */}
-        {keep.length > 0 && (
-          <Section
-            title="Keeping"
-            count={keep.length}
-            badge="gray"
-            collapsed={collapsedSections.has('keep')}
-            onToggle={() => toggleSection('keep')}
-          >
-            {keep.map((sub) => (
-              <SubscriptionRow
-                key={sub.name}
-                subscription={sub}
-                privacyMode={privacyMode}
-                badge="Keep"
-                badgeColor="gray"
-              />
-            ))}
-          </Section>
-        )}
       </div>
 
       {/* Floating Copy Button */}
@@ -223,15 +274,17 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-30"
           >
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleCopy}
-              className="px-8 py-4 bg-foreground text-background font-bold rounded-full shadow-2xl hover:opacity-90 transition-opacity flex items-center gap-3"
+              className="px-8 py-4 bg-foreground text-background font-bold rounded-full shadow-2xl btn-premium transition-all flex items-center gap-3"
             >
-              <span>Copy {selectedForCancel.size} Selected</span>
-              <span className="text-sm opacity-75">→</span>
-            </button>
+              <CopyIcon className="w-5 h-5" />
+              <span>{copySuccess ? 'Copied!' : `Copy ${selectedForCancel.size} Selected`}</span>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -243,39 +296,56 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
 function Section({
   title,
   count,
-  badge,
+  colorScheme,
   collapsed,
   onToggle,
   children,
 }: {
   title: string;
   count: number;
-  badge: 'green' | 'orange' | 'gray';
+  colorScheme: 'negative' | 'warning' | 'positive';
   collapsed: boolean;
   onToggle: () => void;
   children: React.ReactNode;
 }) {
-  const badgeColors = {
-    green: 'bg-green-500',
-    orange: 'bg-orange-500',
-    gray: 'bg-gray-500',
+  const colorClasses = {
+    negative: {
+      badge: 'bg-negative text-white',
+      border: 'border-negative/20',
+    },
+    warning: {
+      badge: 'bg-warning text-white',
+      border: 'border-warning/20',
+    },
+    positive: {
+      badge: 'bg-positive text-white',
+      border: 'border-positive/20',
+    },
   };
 
+  const colors = colorClasses[colorScheme];
+
   return (
-    <div className="mb-8">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:bg-accent transition-colors mb-2"
+        className="w-full flex items-center justify-between p-5 bg-card border border-border rounded-2xl hover:bg-accent transition-all mb-3 stat-glow"
       >
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-foreground">{title}</h2>
-          <span
-            className={`${badgeColors[badge]} text-white text-xs font-bold px-2 py-1 rounded-full`}
-          >
+          <h2 className="font-serif text-xl text-foreground">{title}</h2>
+          <span className={`${colors.badge} text-xs font-bold px-2.5 py-1 rounded-full`}>
             {count}
           </span>
         </div>
-        <span className="text-muted-foreground">{collapsed ? '▼' : '▲'}</span>
+        <ChevronDownIcon
+          className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
+            collapsed ? '' : 'rotate-180'
+          }`}
+        />
       </button>
 
       <AnimatePresence>
@@ -284,13 +354,13 @@ function Section({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="space-y-2"
+            className="space-y-2 overflow-hidden"
           >
             {children}
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
 
@@ -298,25 +368,36 @@ function Section({
 function SubscriptionRow({
   subscription,
   privacyMode,
-  badge,
-  badgeColor,
+  colorScheme,
+  strikethrough = false,
   selectable = false,
   selected = false,
   onToggleSelect,
 }: {
   subscription: CategorizedSubscription;
   privacyMode: boolean;
-  badge: string;
-  badgeColor: 'green' | 'orange' | 'gray';
+  colorScheme: 'negative' | 'warning' | 'positive';
+  strikethrough?: boolean;
   selectable?: boolean;
   selected?: boolean;
   onToggleSelect?: () => void;
 }) {
-  const badgeColors = {
-    green: 'bg-green-500',
-    orange: 'bg-orange-500',
-    gray: 'bg-gray-500',
+  const colorClasses = {
+    negative: {
+      badge: 'bg-negative-muted text-negative',
+      label: 'Cancelled',
+    },
+    warning: {
+      badge: 'bg-warning-muted text-warning',
+      label: 'Investigate',
+    },
+    positive: {
+      badge: 'bg-positive-muted text-positive',
+      label: 'Keep',
+    },
   };
+
+  const colors = colorClasses[colorScheme];
 
   const yearlyAmount =
     subscription.frequency === 'monthly'
@@ -329,45 +410,43 @@ function SubscriptionRow({
 
   return (
     <div
-      className={`bg-card border border-border rounded-lg p-4 flex items-center gap-4 ${
-        badge === 'Cancelled' ? 'opacity-60' : ''
-      }`}
+      className={`bg-card border border-border rounded-xl p-4 flex items-center gap-4 transition-all ${
+        strikethrough ? 'opacity-60' : ''
+      } ${selected ? 'ring-2 ring-warning ring-offset-2 ring-offset-background' : ''}`}
     >
       {selectable && (
         <input
           type="checkbox"
           checked={selected}
           onChange={onToggleSelect}
-          className="w-5 h-5 rounded border-border"
+          className="w-5 h-5 rounded border-border accent-warning cursor-pointer"
         />
       )}
 
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 mb-1">
           <h3
-            className={`font-semibold text-foreground ${badge === 'Cancelled' ? 'line-through' : ''} ${
-              privacyMode ? 'blur-sm' : ''
+            className={`font-medium text-foreground ${strikethrough ? 'line-through' : ''} ${
+              privacyMode ? 'blur-sm select-none' : ''
             }`}
           >
             {subscription.name}
           </h3>
-          <span
-            className={`${badgeColors[badgeColor]} text-white text-xs font-bold px-2 py-1 rounded`}
-          >
-            {badge}
+          <span className={`${colors.badge} text-xs font-semibold px-2 py-0.5 rounded-full`}>
+            {colors.label}
           </span>
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <span className="font-mono font-medium text-foreground">
             {formatCurrency(subscription.amount)}/{subscription.frequency}
           </span>
           <span>·</span>
-          <span>{formatCurrency(yearlyAmount)}/year</span>
+          <span className="font-mono">{formatCurrency(yearlyAmount)}/year</span>
           {subscription.notes && (
             <>
               <span>·</span>
-              <span className="italic">{subscription.notes}</span>
+              <span className="italic text-muted-foreground">{subscription.notes}</span>
             </>
           )}
         </div>

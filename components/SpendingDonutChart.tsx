@@ -11,16 +11,27 @@ interface SpendingDonutChartProps {
   totalSpent: number;
 }
 
-// Colors that work in both light and dark mode
+// Premium grayscale palette that works in both modes
 const CHART_COLORS = [
-  '#171717', // gray-900
-  '#404040', // gray-700
-  '#525252', // gray-600
-  '#737373', // gray-500
-  '#a3a3a3', // gray-400
-  '#d4d4d4', // gray-300
-  '#e5e5e5', // gray-200
-  '#f5f5f5', // gray-100
+  '#1a1a1a', // near black
+  '#374151', // gray-700
+  '#4b5563', // gray-600
+  '#6b7280', // gray-500
+  '#9ca3af', // gray-400
+  '#d1d5db', // gray-300
+  '#e5e7eb', // gray-200
+  '#f3f4f6', // gray-100
+];
+
+const DARK_CHART_COLORS = [
+  '#fafafa', // near white
+  '#d1d5db', // gray-300
+  '#9ca3af', // gray-400
+  '#6b7280', // gray-500
+  '#4b5563', // gray-600
+  '#374151', // gray-700
+  '#1f2937', // gray-800
+  '#111827', // gray-900
 ];
 
 export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChartProps) {
@@ -30,9 +41,13 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
   const activeIndex = hoveredIndex ?? selectedIndex;
   const activeCategory = activeIndex !== null ? categories[activeIndex] : null;
 
-  // Calculate SVG arc paths
-  const size = 200;
-  const strokeWidth = 35;
+  // Check if dark mode (we'll use CSS to handle this)
+  const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark');
+  const colors = isDark ? DARK_CHART_COLORS : CHART_COLORS;
+
+  // SVG parameters
+  const size = 220;
+  const strokeWidth = 40;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const center = size / 2;
@@ -47,7 +62,7 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
     return {
       ...cat,
       index,
-      color: CHART_COLORS[index % CHART_COLORS.length],
+      color: colors[index % colors.length],
       dashArray,
       dashOffset,
     };
@@ -55,8 +70,8 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
 
   return (
     <div className="flex flex-col items-center">
+      {/* Chart */}
       <div className="relative">
-        {/* SVG Donut Chart */}
         <svg width={size} height={size} className="transform -rotate-90">
           {arcs.map((arc, index) => (
             <motion.circle
@@ -73,15 +88,15 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
               initial={{ strokeDasharray: `0 ${circumference}` }}
               animate={{
                 strokeDasharray: arc.dashArray,
-                strokeWidth: activeIndex === index ? strokeWidth + 8 : strokeWidth,
-                opacity: activeIndex !== null && activeIndex !== index ? 0.4 : 1,
+                strokeWidth: activeIndex === index ? strokeWidth + 10 : strokeWidth,
+                opacity: activeIndex !== null && activeIndex !== index ? 0.3 : 1,
               }}
               transition={{
-                strokeDasharray: { duration: 1, delay: index * 0.1, ease: 'easeOut' },
+                strokeDasharray: { duration: 1.2, delay: index * 0.08, ease: 'easeOut' },
                 strokeWidth: { duration: 0.2 },
                 opacity: { duration: 0.2 },
               }}
-              className="cursor-pointer"
+              className="cursor-pointer transition-all"
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
               onClick={() => setSelectedIndex(selectedIndex === index ? null : index)}
@@ -90,7 +105,7 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
           ))}
         </svg>
 
-        {/* Center content */}
+        {/* Center Content */}
         <div className="absolute inset-0 flex items-center justify-center">
           <AnimatePresence mode="wait">
             {activeCategory ? (
@@ -100,15 +115,15 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
-                className="text-center"
+                className="text-center px-4"
               >
-                <p className="text-xs text-muted-foreground mb-1 truncate max-w-[100px]">
+                <p className="text-xs text-muted-foreground mb-1 truncate max-w-[120px]">
                   {activeCategory.category}
                 </p>
-                <p className="text-lg font-bold text-foreground">
+                <p className="font-mono text-xl font-bold text-foreground">
                   {formatCurrency(activeCategory.total)}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground font-mono">
                   {activeCategory.percentage.toFixed(1)}%
                 </p>
               </motion.div>
@@ -122,7 +137,7 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
                 className="text-center"
               >
                 <p className="text-xs text-muted-foreground mb-1">Total</p>
-                <p className="text-lg font-bold text-foreground">
+                <p className="font-mono text-xl font-bold text-foreground">
                   {formatCurrency(totalSpent)}
                 </p>
               </motion.div>
@@ -132,28 +147,35 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
       </div>
 
       {/* Legend */}
-      <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-2 max-w-xs">
+      <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-3 max-w-md">
         {arcs.slice(0, 6).map((arc) => (
           <button
             key={arc.category}
             className={cn(
-              'flex items-center gap-2 text-left transition-opacity',
-              activeIndex !== null && activeIndex !== arc.index ? 'opacity-40' : 'opacity-100'
+              'flex items-center gap-2.5 text-left transition-all duration-200 group',
+              activeIndex !== null && activeIndex !== arc.index ? 'opacity-30' : 'opacity-100'
             )}
             onMouseEnter={() => setHoveredIndex(arc.index)}
             onMouseLeave={() => setHoveredIndex(null)}
             onClick={() => setSelectedIndex(selectedIndex === arc.index ? null : arc.index)}
           >
             <div
-              className="w-3 h-3 rounded-full flex-shrink-0"
+              className="w-3 h-3 rounded-full flex-shrink-0 transition-transform group-hover:scale-125"
               style={{ backgroundColor: arc.color }}
             />
-            <span className="text-xs text-muted-foreground truncate">
+            <span className="text-sm text-muted-foreground truncate group-hover:text-foreground transition-colors">
               {arc.category}
             </span>
           </button>
         ))}
       </div>
+
+      {/* Show more indicator */}
+      {categories.length > 6 && (
+        <p className="mt-4 text-xs text-muted-foreground">
+          +{categories.length - 6} more categories
+        </p>
+      )}
     </div>
   );
 }

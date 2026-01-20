@@ -8,9 +8,11 @@ export function ThemeToggle() {
   const isDark = resolvedTheme === 'dark';
 
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="relative w-10 h-10 rounded-full border border-border bg-card flex items-center justify-center hover:bg-accent transition-colors"
+      className="relative w-11 h-11 rounded-xl border border-border bg-card flex items-center justify-center hover:bg-accent transition-all duration-200 stat-glow"
       aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
     >
       {/* Sun icon */}
@@ -56,6 +58,6 @@ export function ThemeToggle() {
           d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
         />
       </motion.svg>
-    </button>
+    </motion.button>
   );
 }
