@@ -24,6 +24,11 @@
 .DS_Store
 *.pem
 
+# AI coding assistant configs
+.claude/
+.agents/
+.opencode/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

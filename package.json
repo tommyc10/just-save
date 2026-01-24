@@ -6,16 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "video:studio": "remotion studio remotion/index.ts",
+    "video:render": "remotion render remotion/index.ts LaunchVideo out/launch-video.mp4",
+    "video:preview": "remotion preview remotion/index.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "@remotion/cli": "4.0.407",
+    "@remotion/google-fonts": "4.0.407",
+    "@remotion/transitions": "4.0.407",
     "clsx": "^2.1.1",
     "framer-motion": "^12.26.2",
     "next": "16.1.1",
     "pdf-parse": "^2.4.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "remotion": "4.0.407",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
