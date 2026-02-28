@@ -4,18 +4,11 @@ import { Transaction } from '../types';
  * Clean markdown code blocks from AI response
  */
 export function cleanJsonResponse(text: string): string {
-  let jsonText = text.trim();
-
-  if (jsonText.startsWith('```json')) {
-    jsonText = jsonText.slice(7);
-  } else if (jsonText.startsWith('```')) {
-    jsonText = jsonText.slice(3);
+  let s = text.trim();
+  for (const prefix of ['```json', '```']) {
+    if (s.startsWith(prefix)) { s = s.slice(prefix.length); break; }
   }
-  if (jsonText.endsWith('```')) {
-    jsonText = jsonText.slice(0, -3);
-  }
-
-  return jsonText.trim();
+  return s.replace(/```$/, '').trim();
 }
 
 /**

@@ -1,5 +1,8 @@
 import { CategorizedSubscription, AuditReport } from './types';
 import { formatCurrency } from './parsers';
+import { calculateYearlyAmount } from './utils';
+
+const BADGE_CLASSES: Record<string, string> = { cancelled: 'badge-green', investigate: 'badge-orange' };
 
 export function generateAuditReport(subscriptions: CategorizedSubscription[]): AuditReport {
   const timestamp = new Date().toLocaleDateString('en-US', {
@@ -12,17 +15,7 @@ export function generateAuditReport(subscriptions: CategorizedSubscription[]): A
   const investigate = subscriptions.filter((s) => s.category === 'investigate');
   const keep = subscriptions.filter((s) => s.category === 'keep');
 
-  const yearlySavings = cancelled.reduce((sum, sub) => {
-    const yearly =
-      sub.frequency === 'monthly'
-        ? sub.amount * 12
-        : sub.frequency === 'annual'
-        ? sub.amount
-        : sub.frequency === 'quarterly'
-        ? sub.amount * 4
-        : sub.amount * 52;
-    return sum + yearly;
-  }, 0);
+  const yearlySavings = cancelled.reduce((sum, sub) => sum + calculateYearlyAmount(sub), 0);
 
   return {
     timestamp,
@@ -36,20 +29,6 @@ export function generateAuditReport(subscriptions: CategorizedSubscription[]): A
   };
 }
 
-function getYearlyAmount(sub: CategorizedSubscription): number {
-  switch (sub.frequency) {
-    case 'monthly':
-      return sub.amount * 12;
-    case 'annual':
-      return sub.amount;
-    case 'quarterly':
-      return sub.amount * 4;
-    case 'weekly':
-      return sub.amount * 52;
-    default:
-      return sub.amount * 12;
-  }
-}
 
 export function exportToHTML(report: AuditReport): string {
   const cancelled = report.subscriptions.filter((s) => s.category === 'cancel');
@@ -59,8 +38,8 @@ export function exportToHTML(report: AuditReport): string {
   const generateRows = (subs: CategorizedSubscription[], category: 'cancelled' | 'investigate' | 'keep') => {
     return subs
       .map((sub) => {
-        const yearly = getYearlyAmount(sub);
-        const badgeClass = category === 'cancelled' ? 'badge-green' : category === 'investigate' ? 'badge-orange' : 'badge-grey';
+        const yearly = calculateYearlyAmount(sub);
+        const badgeClass = BADGE_CLASSES[category] ?? 'badge-grey';
         const strikethrough = category === 'cancelled' ? 'text-decoration: line-through; opacity: 0.7;' : '';
         const checkbox = category === 'investigate' ? '<input type="checkbox" class="select-checkbox" data-service="' + sub.name + '" data-amount="' + formatCurrency(sub.amount) + '">' : '';
 

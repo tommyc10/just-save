@@ -59,6 +59,9 @@ async function analyzeWithAI(
   try {
     const aiResult = JSON.parse(jsonText);
 
+    const byIndices = (indices: number[] = []) =>
+      indices.map((i) => debitTransactions[i - 1]).filter(Boolean);
+
     // Map subscription indices back to actual transactions
     const subscriptions: Subscription[] = (aiResult.subscriptions || []).map(
       (sub: { name: string; amount: number; frequency?: string; confidence?: string; transactionIndices?: number[] }) => ({
@@ -66,18 +69,14 @@ async function analyzeWithAI(
         amount: sub.amount,
         frequency: sub.frequency || 'monthly',
         confidence: sub.confidence || 'medium',
-        transactions: (sub.transactionIndices || [])
-          .map((idx: number) => debitTransactions[idx - 1])
-          .filter(Boolean),
+        transactions: byIndices(sub.transactionIndices),
       })
     );
 
     // Map category indices back to actual transactions and calculate totals
     const categorySpending: CategorySpending[] = (aiResult.categories || []).map(
       (cat: { category: string; transactionIndices?: number[] }) => {
-        const catTransactions = (cat.transactionIndices || [])
-          .map((idx: number) => debitTransactions[idx - 1])
-          .filter(Boolean);
+        const catTransactions = byIndices(cat.transactionIndices);
 
         const total = catTransactions.reduce(
           (sum: number, t: Transaction) => sum + t.amount,

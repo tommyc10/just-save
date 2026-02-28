@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CategorizedSubscription, SubscriptionCategory } from '@/lib/types';
 import { formatCurrency } from '@/lib/parsers';
+import { calculateYearlyAmount } from '@/lib/utils';
 import { ThemeToggle } from './ThemeToggle';
 import { ArrowLeftIcon, ArrowRightIcon, XCircleIcon, QuestionCircleIcon, CheckCircleIcon } from './Icons';
 
@@ -191,14 +192,7 @@ export function CategorizationView({
               const globalIndex = startIdx + idx;
               const selected = categorized[globalIndex]?.category;
               const config = selected ? CATEGORY_CONFIG[selected] : null;
-              const yearlyAmount =
-                subscription.frequency === 'monthly'
-                  ? subscription.amount * 12
-                  : subscription.frequency === 'annual'
-                  ? subscription.amount
-                  : subscription.frequency === 'quarterly'
-                  ? subscription.amount * 4
-                  : subscription.amount * 52;
+              const yearlyAmount = calculateYearlyAmount(subscription);
 
               return (
                 <motion.div

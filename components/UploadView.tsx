@@ -6,6 +6,12 @@ import { Footer } from './Footer';
 import { ThemeToggle } from './ThemeToggle';
 import { ProgressIndicator, AnalysisStep } from './ProgressIndicator';
 
+const TESTIMONIALS = [
+  { avatar: '/bobafett.png', name: '@bobafett', quote: 'Found subscriptions I forgot about. Simple and effective.', savings: '$240' },
+  { avatar: '/DinDjarin.png', name: '@themandalorian', quote: 'Fast, private, and found charges I missed. Highly recommend.', savings: '$180' },
+  { avatar: '/cadbane.png', name: '@cadbane', quote: 'Clean interface, no data stored. Exactly what I needed.', savings: '$420' },
+];
+
 interface UploadViewProps {
   file: File | null;
   error: string;
@@ -261,27 +267,9 @@ export function UploadView({
           </div>
 
           <div className="grid sm:grid-cols-3 gap-6">
-            <TestimonialCard
-              avatar="/bobafett.png"
-              name="@bobafett"
-              quote="Found subscriptions I forgot about. Simple and effective."
-              savings="$240"
-              delay={0.8}
-            />
-            <TestimonialCard
-              avatar="/DinDjarin.png"
-              name="@themandalorian"
-              quote="Fast, private, and found charges I missed. Highly recommend."
-              savings="$180"
-              delay={0.9}
-            />
-            <TestimonialCard
-              avatar="/cadbane.png"
-              name="@cadbane"
-              quote="Clean interface, no data stored. Exactly what I needed."
-              savings="$420"
-              delay={1.0}
-            />
+            {TESTIMONIALS.map((t, i) => (
+              <TestimonialCard key={t.name} {...t} delay={0.8 + i * 0.1} />
+            ))}
           </div>
         </motion.div>
 

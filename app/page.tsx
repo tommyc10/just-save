@@ -27,47 +27,23 @@ export default function Home() {
     updateAnalysis,
   } = useFileAnalysis();
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setDragging(false);
-  };
-
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragging(true); };
+  const handleDragLeave = () => setDragging(false);
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) handleFile(droppedFile);
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   };
-
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) handleFile(selectedFile);
-  };
-
-  const handleStartCategorization = () => {
-    setView('categorization');
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
   };
 
   const handleCategorizationComplete = (categorized: CategorizedSubscription[]) => {
     if (analysis) {
-      updateAnalysis({
-        ...analysis,
-        subscriptions: categorized,
-      });
+      updateAnalysis({ ...analysis, subscriptions: categorized });
       setView('audit');
     }
-  };
-
-  const handleBackToResults = () => {
-    setView('results');
-  };
-
-  const handleBackToCategorization = () => {
-    setView('categorization');
   };
 
   const handleExportHTML = () => {
@@ -93,7 +69,7 @@ export default function Home() {
     return (
       <AuditView
         subscriptions={analysis.subscriptions}
-        onBack={handleBackToCategorization}
+        onBack={() => setView('categorization')}
         onExportHTML={handleExportHTML}
       />
     );
@@ -104,7 +80,7 @@ export default function Home() {
       <CategorizationView
         subscriptions={analysis.subscriptions}
         onComplete={handleCategorizationComplete}
-        onBack={handleBackToResults}
+        onBack={() => setView('results')}
       />
     );
   }
@@ -116,7 +92,7 @@ export default function Home() {
         fileName={file?.name || 'Statement'}
         insights={insights}
         onReset={reset}
-        onStartCategorization={handleStartCategorization}
+        onStartCategorization={() => setView('categorization')}
       />
     );
   }

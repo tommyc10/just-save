@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CategorizedSubscription } from '@/lib/types';
 import { formatCurrency } from '@/lib/parsers';
+import { calculateYearlyAmount } from '@/lib/utils';
 import { ThemeToggle } from './ThemeToggle';
 import {
   ArrowLeftIcon,
@@ -29,43 +30,32 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
   const [privacyMode, setPrivacyMode] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [copySuccess, setCopySuccess] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current); }, []);
 
   const cancelled = subscriptions.filter((s) => s.category === 'cancel');
   const investigate = subscriptions.filter((s) => s.category === 'investigate');
   const keep = subscriptions.filter((s) => s.category === 'keep');
 
-  const yearlySavings = cancelled.reduce((sum, sub) => {
-    const yearly =
-      sub.frequency === 'monthly'
-        ? sub.amount * 12
-        : sub.frequency === 'annual'
-        ? sub.amount
-        : sub.frequency === 'quarterly'
-        ? sub.amount * 4
-        : sub.amount * 52;
-    return sum + yearly;
-  }, 0);
+  const yearlySavings = cancelled.reduce((sum, sub) => sum + calculateYearlyAmount(sub), 0);
 
   const monthlySavings = yearlySavings / 12;
 
   const toggleSection = (section: string) => {
-    const updated = new Set(collapsedSections);
-    if (updated.has(section)) {
-      updated.delete(section);
-    } else {
-      updated.add(section);
-    }
-    setCollapsedSections(updated);
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      next.has(section) ? next.delete(section) : next.add(section);
+      return next;
+    });
   };
 
   const toggleSelect = (name: string) => {
-    const updated = new Set(selectedForCancel);
-    if (updated.has(name)) {
-      updated.delete(name);
-    } else {
-      updated.add(name);
-    }
-    setSelectedForCancel(updated);
+    setSelectedForCancel(prev => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
   };
 
   const handleCopy = () => {
@@ -76,7 +66,8 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
 
     navigator.clipboard.writeText(text);
     setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopySuccess(false), 2000);
   };
 
   return (
@@ -399,14 +390,7 @@ function SubscriptionRow({
 
   const colors = colorClasses[colorScheme];
 
-  const yearlyAmount =
-    subscription.frequency === 'monthly'
-      ? subscription.amount * 12
-      : subscription.frequency === 'annual'
-      ? subscription.amount
-      : subscription.frequency === 'quarterly'
-      ? subscription.amount * 4
-      : subscription.amount * 52;
+  const yearlyAmount = calculateYearlyAmount(subscription);
 
   return (
     <div
