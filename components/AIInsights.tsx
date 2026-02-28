@@ -75,7 +75,7 @@ export function AIInsights({ insights }: AIInsightsProps) {
               className={`relative overflow-hidden bg-card border ${card.borderColor} rounded-2xl p-5 stat-glow`}
             >
               {/* Gradient overlay */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-50`} />
+              <div className={`absolute inset-0 bg-linear-to-br ${card.gradient} opacity-50`} />
 
               {/* Content */}
               <div className="relative z-10">
