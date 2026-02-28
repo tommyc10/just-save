@@ -117,7 +117,7 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
                 transition={{ duration: 0.2 }}
                 className="text-center px-4"
               >
-                <p className="text-xs text-muted-foreground mb-1 truncate max-w-[120px]">
+                <p className="text-xs text-muted-foreground mb-1 truncate max-w-30">
                   {activeCategory.category}
                 </p>
                 <p className="font-mono text-xl font-bold text-foreground">
@@ -160,7 +160,7 @@ export function SpendingDonutChart({ categories, totalSpent }: SpendingDonutChar
             onClick={() => setSelectedIndex(selectedIndex === arc.index ? null : arc.index)}
           >
             <div
-              className="w-3 h-3 rounded-full flex-shrink-0 transition-transform group-hover:scale-125"
+              className="w-3 h-3 rounded-full shrink-0 transition-transform group-hover:scale-125"
               style={{ backgroundColor: arc.color }}
             />
             <span className="text-sm text-muted-foreground truncate group-hover:text-foreground transition-colors">

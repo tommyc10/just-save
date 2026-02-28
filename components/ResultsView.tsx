@@ -116,7 +116,7 @@ export function ResultsView({ analysis, fileName, insights, onReset, onStartCate
         >
           <div className="bg-foreground rounded-3xl p-10 md:p-12 relative overflow-hidden stat-glow">
             {/* Decorative gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent" />
 
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4">
