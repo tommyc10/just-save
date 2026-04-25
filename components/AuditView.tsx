@@ -1,22 +1,24 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CategorizedSubscription } from '@/lib/types';
 import { formatCurrency } from '@/lib/parsers';
-import { calculateYearlyAmount } from '@/lib/utils';
+import { calculateYearlyAmount, detectPriceChange } from '@/lib/utils';
 import { ThemeToggle } from './ThemeToggle';
+import { CancelHelperModal } from './CancelHelperModal';
 import {
   ArrowLeftIcon,
   EyeIcon,
   EyeSlashIcon,
   DocumentIcon,
-  CopyIcon,
   XCircleIcon,
   QuestionCircleIcon,
   CheckCircleIcon,
   ChevronDownIcon,
   PiggyBankIcon,
+  TrendingUpIcon,
+  ExternalLinkIcon,
 } from './Icons';
 
 interface AuditViewProps {
@@ -26,56 +28,30 @@ interface AuditViewProps {
 }
 
 export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProps) {
-  const [selectedForCancel, setSelectedForCancel] = useState<Set<string>>(new Set());
   const [privacyMode, setPrivacyMode] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
-  const [copySuccess, setCopySuccess] = useState(false);
-  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => { if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current); }, []);
+  const [helperTarget, setHelperTarget] = useState<CategorizedSubscription | null>(null);
 
   const cancelled = subscriptions.filter((s) => s.category === 'cancel');
   const investigate = subscriptions.filter((s) => s.category === 'investigate');
   const keep = subscriptions.filter((s) => s.category === 'keep');
 
   const yearlySavings = cancelled.reduce((sum, sub) => sum + calculateYearlyAmount(sub), 0);
-
   const monthlySavings = yearlySavings / 12;
 
   const toggleSection = (section: string) => {
-    setCollapsedSections(prev => {
+    setCollapsedSections((prev) => {
       const next = new Set(prev);
-      next.has(section) ? next.delete(section) : next.add(section);
+      if (next.has(section)) next.delete(section);
+      else next.add(section);
       return next;
     });
-  };
-
-  const toggleSelect = (name: string) => {
-    setSelectedForCancel(prev => {
-      const next = new Set(prev);
-      next.has(name) ? next.delete(name) : next.add(name);
-      return next;
-    });
-  };
-
-  const handleCopy = () => {
-    const selected = investigate.filter((s) => selectedForCancel.has(s.name));
-    const text = `Cancel these subscriptions:\n\n${selected
-      .map((s) => `• ${s.name} - ${formatCurrency(s.amount)}/${s.frequency}`)
-      .join('\n')}`;
-
-    navigator.clipboard.writeText(text);
-    setCopySuccess(true);
-    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
-    copyTimeoutRef.current = setTimeout(() => setCopySuccess(false), 2000);
   };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Grid background */}
       <div className="absolute inset-0 bg-grid opacity-30" />
 
-      {/* Theme Toggle */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -112,7 +88,6 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
               </p>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex items-center gap-3">
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -120,11 +95,7 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
                 onClick={() => setPrivacyMode(!privacyMode)}
                 className="px-4 py-2.5 border border-border rounded-xl bg-card hover:bg-accent transition-all flex items-center gap-2 text-sm font-medium text-foreground stat-glow"
               >
-                {privacyMode ? (
-                  <EyeIcon className="w-4 h-4" />
-                ) : (
-                  <EyeSlashIcon className="w-4 h-4" />
-                )}
+                {privacyMode ? <EyeIcon className="w-4 h-4" /> : <EyeSlashIcon className="w-4 h-4" />}
                 {privacyMode ? 'Show Names' : 'Hide Names'}
               </motion.button>
               <motion.button
@@ -147,35 +118,9 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
           transition={{ delay: 0.1, duration: 0.6 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10"
         >
-          <div className="bg-card border border-border rounded-2xl p-5 stat-glow">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-negative-muted flex items-center justify-center">
-                <XCircleIcon className="w-4 h-4 text-negative" />
-              </div>
-            </div>
-            <p className="font-mono text-2xl font-bold text-foreground">{cancelled.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">Cancelled</p>
-          </div>
-
-          <div className="bg-card border border-border rounded-2xl p-5 stat-glow">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-warning-muted flex items-center justify-center">
-                <QuestionCircleIcon className="w-4 h-4 text-warning" />
-              </div>
-            </div>
-            <p className="font-mono text-2xl font-bold text-foreground">{investigate.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">Needs Decision</p>
-          </div>
-
-          <div className="bg-card border border-border rounded-2xl p-5 stat-glow">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-positive-muted flex items-center justify-center">
-                <CheckCircleIcon className="w-4 h-4 text-positive" />
-              </div>
-            </div>
-            <p className="font-mono text-2xl font-bold text-foreground">{keep.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">Keeping</p>
-          </div>
+          <StatCard icon={<XCircleIcon className="w-4 h-4 text-negative" />} tint="negative" value={cancelled.length} label="Cancelled" />
+          <StatCard icon={<QuestionCircleIcon className="w-4 h-4 text-warning" />} tint="warning" value={investigate.length} label="Needs Decision" />
+          <StatCard icon={<CheckCircleIcon className="w-4 h-4 text-positive" />} tint="positive" value={keep.length} label="Keeping" />
 
           <div className="bg-positive-muted border border-positive/20 rounded-2xl p-5 positive-glow">
             <div className="flex items-center gap-2 mb-3">
@@ -183,7 +128,9 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
                 <PiggyBankIcon className="w-4 h-4 text-positive" />
               </div>
             </div>
-            <p className="font-mono text-2xl font-bold text-positive">{formatCurrency(yearlySavings)}</p>
+            <p className="font-mono text-2xl font-bold text-positive">
+              {formatCurrency(yearlySavings)}
+            </p>
             <p className="text-xs text-positive/70 mt-1">
               Yearly Savings ({formatCurrency(monthlySavings)}/mo)
             </p>
@@ -192,7 +139,6 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
 
         {/* Sections */}
         <div className="space-y-6">
-          {/* Cancelled Section */}
           {cancelled.length > 0 && (
             <Section
               title="Cancelled"
@@ -208,12 +154,13 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
                   privacyMode={privacyMode}
                   colorScheme="negative"
                   strikethrough
+                  showCancelHelp
+                  onCancelHelp={() => setHelperTarget(sub)}
                 />
               ))}
             </Section>
           )}
 
-          {/* Needs Decision Section */}
           {investigate.length > 0 && (
             <Section
               title="Needs Decision"
@@ -228,15 +175,13 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
                   subscription={sub}
                   privacyMode={privacyMode}
                   colorScheme="warning"
-                  selectable
-                  selected={selectedForCancel.has(sub.name)}
-                  onToggleSelect={() => toggleSelect(sub.name)}
+                  showCancelHelp
+                  onCancelHelp={() => setHelperTarget(sub)}
                 />
               ))}
             </Section>
           )}
 
-          {/* Keeping Section */}
           {keep.length > 0 && (
             <Section
               title="Keeping"
@@ -258,32 +203,39 @@ export function AuditView({ subscriptions, onBack, onExportHTML }: AuditViewProp
         </div>
       </div>
 
-      {/* Floating Copy Button */}
-      <AnimatePresence>
-        {selectedForCancel.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-30"
-          >
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleCopy}
-              className="px-8 py-4 bg-foreground text-background font-bold rounded-full shadow-2xl btn-premium transition-all flex items-center gap-3"
-            >
-              <CopyIcon className="w-5 h-5" />
-              <span>{copySuccess ? 'Copied!' : `Copy ${selectedForCancel.size} Selected`}</span>
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <CancelHelperModal subscription={helperTarget} onClose={() => setHelperTarget(null)} />
     </div>
   );
 }
 
-// Section Component
+function StatCard({
+  icon,
+  tint,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  tint: 'negative' | 'warning' | 'positive';
+  value: number;
+  label: string;
+}) {
+  const bg = {
+    negative: 'bg-negative-muted',
+    warning: 'bg-warning-muted',
+    positive: 'bg-positive-muted',
+  }[tint];
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5 stat-glow">
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}>{icon}</div>
+      </div>
+      <p className="font-mono text-2xl font-bold text-foreground">{value}</p>
+      <p className="text-xs text-muted-foreground mt-1">{label}</p>
+    </div>
+  );
+}
+
 function Section({
   title,
   count,
@@ -299,38 +251,21 @@ function Section({
   onToggle: () => void;
   children: React.ReactNode;
 }) {
-  const colorClasses = {
-    negative: {
-      badge: 'bg-negative text-white',
-      border: 'border-negative/20',
-    },
-    warning: {
-      badge: 'bg-warning text-white',
-      border: 'border-warning/20',
-    },
-    positive: {
-      badge: 'bg-positive text-white',
-      border: 'border-positive/20',
-    },
-  };
-
-  const colors = colorClasses[colorScheme];
+  const badge = {
+    negative: 'bg-negative text-white',
+    warning: 'bg-warning text-white',
+    positive: 'bg-positive text-white',
+  }[colorScheme];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between p-5 bg-card border border-border rounded-2xl hover:bg-accent transition-all mb-3 stat-glow"
       >
         <div className="flex items-center gap-3">
           <h2 className="font-serif text-xl text-foreground">{title}</h2>
-          <span className={`${colors.badge} text-xs font-bold px-2.5 py-1 rounded-full`}>
-            {count}
-          </span>
+          <span className={`${badge} text-xs font-bold px-2.5 py-1 rounded-full`}>{count}</span>
         </div>
         <ChevronDownIcon
           className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
@@ -355,60 +290,38 @@ function Section({
   );
 }
 
-// Subscription Row Component
 function SubscriptionRow({
   subscription,
   privacyMode,
   colorScheme,
   strikethrough = false,
-  selectable = false,
-  selected = false,
-  onToggleSelect,
+  showCancelHelp = false,
+  onCancelHelp,
 }: {
   subscription: CategorizedSubscription;
   privacyMode: boolean;
   colorScheme: 'negative' | 'warning' | 'positive';
   strikethrough?: boolean;
-  selectable?: boolean;
-  selected?: boolean;
-  onToggleSelect?: () => void;
+  showCancelHelp?: boolean;
+  onCancelHelp?: () => void;
 }) {
-  const colorClasses = {
-    negative: {
-      badge: 'bg-negative-muted text-negative',
-      label: 'Cancelled',
-    },
-    warning: {
-      badge: 'bg-warning-muted text-warning',
-      label: 'Investigate',
-    },
-    positive: {
-      badge: 'bg-positive-muted text-positive',
-      label: 'Keep',
-    },
-  };
-
-  const colors = colorClasses[colorScheme];
+  const badge = {
+    negative: { cls: 'bg-negative-muted text-negative', label: 'Cancelled' },
+    warning: { cls: 'bg-warning-muted text-warning', label: 'Investigate' },
+    positive: { cls: 'bg-positive-muted text-positive', label: 'Keep' },
+  }[colorScheme];
 
   const yearlyAmount = calculateYearlyAmount(subscription);
+  const priceChange = detectPriceChange(subscription.transactions);
 
   return (
     <div
       className={`bg-card border border-border rounded-xl p-4 flex items-center gap-4 transition-all ${
         strikethrough ? 'opacity-60' : ''
-      } ${selected ? 'ring-2 ring-warning ring-offset-2 ring-offset-background' : ''}`}
+      }`}
     >
-      {selectable && (
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={onToggleSelect}
-          className="w-5 h-5 rounded border-border accent-warning cursor-pointer"
-        />
-      )}
-
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-3 mb-1">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
           <h3
             className={`font-medium text-foreground ${strikethrough ? 'line-through' : ''} ${
               privacyMode ? 'blur-sm select-none' : ''
@@ -416,9 +329,15 @@ function SubscriptionRow({
           >
             {subscription.name}
           </h3>
-          <span className={`${colors.badge} text-xs font-semibold px-2 py-0.5 rounded-full`}>
-            {colors.label}
+          <span className={`${badge.cls} text-xs font-semibold px-2 py-0.5 rounded-full`}>
+            {badge.label}
           </span>
+          {priceChange && priceChange.direction === 'up' && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-warning-muted text-warning">
+              <TrendingUpIcon className="w-3 h-3" />
+              Price up {priceChange.percentDelta.toFixed(0)}%
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -427,14 +346,32 @@ function SubscriptionRow({
           </span>
           <span>·</span>
           <span className="font-mono">{formatCurrency(yearlyAmount)}/year</span>
+          {priceChange && (
+            <>
+              <span>·</span>
+              <span className="font-mono">
+                {formatCurrency(priceChange.min)} → {formatCurrency(priceChange.max)}
+              </span>
+            </>
+          )}
           {subscription.notes && (
             <>
               <span>·</span>
-              <span className="italic text-muted-foreground">{subscription.notes}</span>
+              <span className="italic">{subscription.notes}</span>
             </>
           )}
         </div>
       </div>
+
+      {showCancelHelp && onCancelHelp && (
+        <button
+          onClick={onCancelHelp}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity"
+        >
+          <ExternalLinkIcon className="w-3.5 h-3.5" />
+          Help me cancel
+        </button>
+      )}
     </div>
   );
 }

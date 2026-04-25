@@ -56,6 +56,40 @@ RESPOND WITH ONLY THE JSON ARRAY, NOTHING ELSE:`;
 }
 
 /**
+ * Prompt for generating cancellation help for a specific subscription.
+ * Returns structured guidance the UI renders as steps, an email template, and gotchas.
+ */
+export function getCancelHelpPrompt(args: {
+  name: string;
+  amount: number;
+  frequency: string;
+  knownUrl?: string;
+  knownGotcha?: string;
+}): string {
+  const { name, amount, frequency, knownUrl, knownGotcha } = args;
+  return `You are a subscription cancellation assistant. A user wants to cancel the subscription "${name}" (${amount.toFixed(2)} per ${frequency}).
+
+${knownUrl ? `Known cancellation URL: ${knownUrl}` : 'No known URL for this service — include a note that they may need to log into their account or check their email receipts to find cancellation instructions.'}
+${knownGotcha ? `Known gotcha: ${knownGotcha}` : ''}
+
+Return ONLY a JSON object with this exact structure — no markdown, no commentary:
+
+{
+  "steps": ["Step 1 description", "Step 2 description", "..."],
+  "emailSubject": "Short subject line for a cancellation email (use if they cancel by email)",
+  "emailBody": "Full email body with placeholder {{ACCOUNT_EMAIL}} they can fill in. Keep firm, polite, and clear.",
+  "gotchas": ["Short warning 1", "Short warning 2"]
+}
+
+Rules:
+- "steps" should be 3-6 short, actionable steps specific to THIS service. Prefer the fastest path (direct link > login > email > phone).
+- If the known URL is provided, step 1 should point to it.
+- "emailBody" is the fallback — useful when they can't cancel online.
+- "gotchas" should include: retention offers to decline, notice periods, prorated charges, free-trial end dates if relevant, and any known trick (e.g. "cancellation by phone only").
+- Keep everything concise and practical. No fluff.`;
+}
+
+/**
  * Prompt for transaction analysis
  * Detects subscriptions, categorizes spending, generates insights
  */

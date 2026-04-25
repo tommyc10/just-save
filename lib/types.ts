@@ -15,6 +15,14 @@ export interface Subscription {
   transactions: Transaction[];
 }
 
+// AI-generated cancellation guidance for a specific subscription
+export interface CancelHelp {
+  steps: string[];
+  emailSubject: string;
+  emailBody: string;
+  gotchas: string[];
+}
+
 // Subscription categorization types
 export type SubscriptionCategory = 'cancel' | 'investigate' | 'keep';
 
